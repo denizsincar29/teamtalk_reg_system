@@ -145,7 +145,7 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
         response_queue: Queue to send responses back to the main process.
     """
     bot = pytalk.TeamTalkBot()
-    instance_holder: dict[str, Any] = {"instance": None, "ready": False}
+    instance_holder: dict[str, Any] = {"instance": None, "server": None, "ready": False}
 
     async def process_requests() -> None:
         """Process incoming requests from the queue."""
@@ -160,6 +160,7 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                     request = request_queue.get_nowait()
                     action = request.get("action")
                     instance = instance_holder["instance"]
+                    server = instance_holder["server"]
                     
                     if action == "check_user":
                         username = request.get("username")
@@ -188,6 +189,15 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                 password,
                                 enums.UserType.DEFAULT
                             )
+                            # Send broadcast message announcing new user registration
+                            if server is not None:
+                                try:
+                                    server.send_message(
+                                        f"New user registered: {username}"
+                                    )
+                                except Exception:
+                                    # Don't fail registration if broadcast fails
+                                    pass
                             response_queue.put({"success": True})
                         except Exception as e:
                             response_queue.put({"success": False, "error": str(e)})
@@ -207,6 +217,7 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
     @bot.event
     async def on_my_login(srv: pytalk.server.Server) -> None:
         instance_holder["instance"] = srv.teamtalk_instance
+        instance_holder["server"] = srv
         instance_holder["ready"] = True
 
     @bot.event
