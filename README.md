@@ -85,6 +85,7 @@ nano .env
 | `APP_HOST` | `0.0.0.0` | Web server bind address (all IPs) |
 | `APP_PORT` | `8000` | Web server port |
 | `FORWARDED_ALLOW_IPS` | `*` | Allowed proxy IPs for X-Forwarded headers |
+| `ROOT_PATH` | (empty) | URL path prefix for reverse proxy with subpath (e.g., `/myapp`) |
 
 ## Running the Application
 
@@ -94,6 +95,48 @@ uv run main.py
 ```
 
 Then open http://localhost:8000 in your browser.
+
+## Apache Reverse Proxy Setup
+
+To run this application behind an Apache reverse proxy:
+
+### Option 1: Proxy at root (example.com)
+
+```apache
+<VirtualHost *:80>
+    ServerName example.com
+    
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:8000/
+    ProxyPassReverse / http://127.0.0.1:8000/
+    
+    RequestHeader set X-Forwarded-Proto "http"
+    RequestHeader set X-Forwarded-For "%{REMOTE_ADDR}s"
+</VirtualHost>
+```
+
+### Option 2: Proxy at subpath (example.com/teamtalk)
+
+```apache
+<VirtualHost *:80>
+    ServerName example.com
+    
+    ProxyPreserveHost On
+    ProxyPass /teamtalk http://127.0.0.1:8000
+    ProxyPassReverse /teamtalk http://127.0.0.1:8000
+    
+    RequestHeader set X-Forwarded-Proto "http"
+    RequestHeader set X-Forwarded-For "%{REMOTE_ADDR}s"
+</VirtualHost>
+```
+
+For subpath proxying, set `ROOT_PATH=/teamtalk` in your `.env` file.
+
+**Required Apache modules:**
+```bash
+sudo a2enmod proxy proxy_http headers
+sudo systemctl restart apache2
+```
 
 ## Usage
 

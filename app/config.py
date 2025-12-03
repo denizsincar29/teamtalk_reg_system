@@ -36,3 +36,6 @@ APP_PORT = int(os.environ.get("APP_PORT", "8000"))
 # Proxy settings for Apache/Nginx reverse proxy
 PROXY_HEADERS = True  # Enable reading X-Forwarded-* headers
 FORWARDED_ALLOW_IPS = os.environ.get("FORWARDED_ALLOW_IPS", "*")  # Allow all proxy IPs
+
+# Root path for reverse proxy with subpath (e.g., "/myapp" if proxied at example.com/myapp)
+ROOT_PATH = os.environ.get("ROOT_PATH", "")
