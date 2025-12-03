@@ -8,8 +8,28 @@ A FastAPI web application that allows users to register on a TeamTalk server.
 - Input validation (minimum username and password lengths)
 - Checks if user already exists before registration
 - Creates new user accounts on the TeamTalk server
+- Broadcasts a message when a new user registers
 - XSS protection with HTML escaping
 - Configurable via environment variables
+
+## Project Structure
+
+```
+teamtalk_reg_system/
+├── main.py              # Application entry point
+├── app/
+│   ├── __init__.py      # Package initialization
+│   ├── config.py        # Configuration settings
+│   ├── tt_bot.py        # TeamTalk bot worker
+│   ├── manager.py       # TeamTalk manager for process communication
+│   ├── routes.py        # FastAPI routes
+│   ├── templates/
+│   │   └── base.html    # Jinja2 HTML template
+│   └── static/
+│       └── style.css    # CSS styles
+├── pyproject.toml       # Project dependencies
+└── README.md
+```
 
 ## Requirements
 
@@ -72,6 +92,13 @@ The application uses a multiprocessing approach because the pytalk-ex library ru
 2. **Worker Process**: Runs pytalk-ex bot that connects to the TeamTalk server
 
 Communication between processes happens via multiprocessing Queues.
+
+### Modules
+
+- **config.py**: Contains all configuration constants and environment variable loading
+- **tt_bot.py**: TeamTalk bot worker that handles server connections and user operations
+- **manager.py**: Manages communication between FastAPI and the TeamTalk worker process
+- **routes.py**: FastAPI route handlers for the registration form
 
 ## Development
 
