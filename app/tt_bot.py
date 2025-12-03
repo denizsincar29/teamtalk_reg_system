@@ -5,9 +5,26 @@ from multiprocessing import Queue
 from typing import Any
 
 import pytalk
-from pytalk import enums
+from pytalk import enums, Permission
 
 from .config import BOT_SERVER_CONFIG
+
+# Default user rights for newly registered users
+# This gives users standard capabilities: voice, messaging, file transfers, etc.
+DEFAULT_USER_RIGHTS = (
+    Permission.MULTI_LOGIN |           # Allow multiple simultaneous logins
+    Permission.VIEW_ALL_USERS |        # See all users on the server
+    Permission.CREATE_TEMPORARY_CHANNEL |  # Create temporary channels
+    Permission.UPLOAD_FILES |          # Upload files to channels
+    Permission.DOWNLOAD_FILES |        # Download files from channels
+    Permission.TRANSMIT_VOICE |        # Transmit voice
+    Permission.TRANSMIT_VIDEOCAPTURE | # Transmit video from camera
+    Permission.TRANSMIT_DESKTOP |      # Share desktop
+    Permission.TRANSMIT_MEDIAFILE_AUDIO |  # Stream audio files
+    Permission.TRANSMIT_MEDIAFILE_VIDEO |  # Stream video files
+    Permission.TEXTMESSAGE_USER |      # Send private messages
+    Permission.TEXTMESSAGE_CHANNEL     # Send channel messages
+)
 
 
 def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
@@ -60,7 +77,8 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             instance.create_user_account(
                                 username,
                                 password,
-                                enums.UserType.DEFAULT
+                                enums.UserType.DEFAULT,
+                                user_rights=DEFAULT_USER_RIGHTS
                             )
                             # Send broadcast message announcing new user registration
                             if server is not None:
