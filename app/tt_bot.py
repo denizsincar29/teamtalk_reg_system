@@ -75,6 +75,17 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                         except Exception as e:
                             response_queue.put({"success": False, "error": str(e)})
                     
+                    elif action == "broadcast":
+                        message = request.get("message")
+                        try:
+                            if server is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            server.send_message(message)
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            response_queue.put({"success": False, "error": str(e)})
+                    
                     elif action == "shutdown":
                         break
             except Exception:

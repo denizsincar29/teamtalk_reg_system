@@ -9,6 +9,11 @@ A FastAPI web application that allows users to register on a TeamTalk server.
 - Checks if user already exists before registration
 - Creates new user accounts on the TeamTalk server
 - Broadcasts a message when a new user registers
+- **After registration success page with:**
+  - Downloadable .tt configuration file
+  - tt:// URL for direct connection
+  - Server connection details
+- Test broadcast endpoint (`/api/broadcast`)
 - XSS protection with HTML escaping
 - Configurable via environment variables
 
@@ -21,10 +26,12 @@ teamtalk_reg_system/
 │   ├── __init__.py      # Package initialization
 │   ├── config.py        # Configuration settings
 │   ├── tt_bot.py        # TeamTalk bot worker
+│   ├── tt_file.py       # .tt file generation utilities
 │   ├── manager.py       # TeamTalk manager for process communication
 │   ├── routes.py        # FastAPI routes
 │   ├── templates/
-│   │   └── base.html    # Jinja2 HTML template
+│   │   ├── base.html    # Registration form template
+│   │   └── success.html # Success page template
 │   └── static/
 │       └── style.css    # CSS styles
 ├── pyproject.toml       # Project dependencies
@@ -82,7 +89,20 @@ Then open http://localhost:8000 in your browser.
 2. Enter a username (minimum 3 characters)
 3. Enter a password (minimum 4 characters)  
 4. Click "Register"
-5. If successful, you can now connect to the TeamTalk server with your new credentials
+5. On success, you'll see a page with:
+   - Download link for a .tt configuration file
+   - tt:// URL link for direct connection
+   - Server connection details
+6. Use either method to connect to the TeamTalk server
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Registration form |
+| `/register` | POST | Handle registration |
+| `/download-tt/{username}/{password_encoded}` | GET | Download .tt file |
+| `/api/broadcast` | GET | Send test broadcast message |
 
 ## Architecture
 
@@ -97,6 +117,7 @@ Communication between processes happens via multiprocessing Queues.
 
 - **config.py**: Contains all configuration constants and environment variable loading
 - **tt_bot.py**: TeamTalk bot worker that handles server connections and user operations
+- **tt_file.py**: Generates .tt configuration files and tt:// URLs
 - **manager.py**: Manages communication between FastAPI and the TeamTalk worker process
 - **routes.py**: FastAPI route handlers for the registration form
 

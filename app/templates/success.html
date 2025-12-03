@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful - TeamTalk</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="form-container">
+        <h1>Registration Successful!</h1>
+        <div class="message success">
+            <p>User "<strong>{{ username }}</strong>" has been registered successfully!</p>
+        </div>
+        
+        <div class="connection-options">
+            <h2>Connect to TeamTalk Server</h2>
+            
+            <div class="option-group">
+                <h3>Option 1: Download .tt File</h3>
+                <p>Download a configuration file to open with TeamTalk client:</p>
+                <a href="/download-tt/{{ username }}/{{ password_encoded }}" class="btn btn-primary">
+                    Download {{ username }}.tt
+                </a>
+            </div>
+            
+            <div class="option-group">
+                <h3>Option 2: Quick Connect</h3>
+                <p>Click the link below to connect directly (requires TeamTalk installed):</p>
+                <a href="{{ tt_url }}" class="btn btn-secondary">
+                    Connect via tt:// URL
+                </a>
+            </div>
+            
+            <div class="option-group">
+                <h3>Server Details</h3>
+                <div class="server-info">
+                    <p><strong>Host:</strong> {{ host }}</p>
+                    <p><strong>TCP Port:</strong> {{ tcp_port }}</p>
+                    <p><strong>UDP Port:</strong> {{ udp_port }}</p>
+                    <p><strong>Username:</strong> {{ username }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="/">← Register another user</a>
+        </div>
+    </div>
+</body>
+</html>
