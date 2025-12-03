@@ -18,13 +18,20 @@ from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse
 from pytalk import enums
 
+# Application configuration constants
+MIN_USERNAME_LENGTH = 3
+MIN_PASSWORD_LENGTH = 4
+RESPONSE_TIMEOUT_SECONDS = 10
+RESPONSE_POLL_INTERVAL = 0.1
+STARTUP_DELAY_SECONDS = 5
+
 # Server configuration - credentials should be set via environment variables
 SERVER_CONFIG = {
     "host": os.environ.get("TEAMTALK_HOST", "denizsincar.ru"),
     "tcp_port": int(os.environ.get("TEAMTALK_TCP_PORT", "10333")),
     "udp_port": int(os.environ.get("TEAMTALK_UDP_PORT", "10333")),
     "username": os.environ.get("TEAMTALK_USERNAME", "bot"),
-    "password": os.environ.get("TEAMTALK_PASSWORD", "893200"),
+    "password": os.environ.get("TEAMTALK_PASSWORD", ""),
 }
 
 
@@ -232,7 +239,7 @@ class TeamTalkManager:
         )
         self.process.start()
         # Give the worker time to connect
-        await asyncio.sleep(5)
+        await asyncio.sleep(STARTUP_DELAY_SECONDS)
     
     async def check_user_exists(self, username: str) -> tuple[bool, str | None]:
         """Check if a user already exists on the server.
@@ -250,8 +257,9 @@ class TeamTalkManager:
             self.request_queue.put({"action": "check_user", "username": username})
             
             # Wait for response with timeout
-            for _ in range(100):  # 10 second timeout
-                await asyncio.sleep(0.1)
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
                 if not self.response_queue.empty():
                     response = self.response_queue.get_nowait()
                     return response.get("exists", False), response.get("error")
@@ -279,8 +287,9 @@ class TeamTalkManager:
             })
             
             # Wait for response with timeout
-            for _ in range(100):  # 10 second timeout
-                await asyncio.sleep(0.1)
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
                 if not self.response_queue.empty():
                     response = self.response_queue.get_nowait()
                     return response.get("success", False), response.get("error")
@@ -333,17 +342,20 @@ async def register(
     Returns:
         HTML response with success or error message.
     """
-    # Validate input
+    # Clean and validate input
+    username = username.strip()
+    password = password.strip()
+    
     if not username or not password:
         message = '<div class="message error">Username and password are required.</div>'
         return HTML_TEMPLATE.format(message=message)
     
-    if len(username) < 3:
-        message = '<div class="message error">Username must be at least 3 characters.</div>'
+    if len(username) < MIN_USERNAME_LENGTH:
+        message = f'<div class="message error">Username must be at least {MIN_USERNAME_LENGTH} characters.</div>'
         return HTML_TEMPLATE.format(message=message)
     
-    if len(password) < 4:
-        message = '<div class="message error">Password must be at least 4 characters.</div>'
+    if len(password) < MIN_PASSWORD_LENGTH:
+        message = f'<div class="message error">Password must be at least {MIN_PASSWORD_LENGTH} characters.</div>'
         return HTML_TEMPLATE.format(message=message)
     
     # Check if user already exists
@@ -374,4 +386,7 @@ async def register(
 if __name__ == "__main__":
     import uvicorn
     multiprocessing.set_start_method("spawn", force=True)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    host = os.environ.get("APP_HOST", "127.0.0.1")
+    port = int(os.environ.get("APP_PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)
+
