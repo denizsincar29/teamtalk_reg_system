@@ -30,7 +30,7 @@ async def on_my_login(srv: server.Server):
     """Called when the bot successfully logs in."""
     print("Connected to the server!")
     users = srv.get_users()
-    if users:
+    if users and users[0] is not None:
         print(users[0])
 
 
