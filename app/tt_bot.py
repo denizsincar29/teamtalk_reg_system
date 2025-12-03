@@ -7,7 +7,7 @@ from typing import Any
 import pytalk
 from pytalk import enums
 
-from .config import SERVER_CONFIG
+from .config import BOT_SERVER_CONFIG
 
 
 def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
@@ -93,7 +93,7 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
 
     @bot.event
     async def on_ready() -> None:
-        server_info = pytalk.TeamTalkServerInfo(SERVER_CONFIG)
+        server_info = pytalk.TeamTalkServerInfo(BOT_SERVER_CONFIG)
         await bot.add_server(server_info)
         # Start the request processor after bot is ready
         bot.loop.create_task(process_requests())

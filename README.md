@@ -2,6 +2,8 @@
 
 A FastAPI web application that allows users to register on a TeamTalk server.
 
+**Created by Deniz Sincar ([denizsincar.ru](https://denizsincar.ru))**
+
 ## Features
 
 - Clean, responsive HTML registration form
@@ -17,28 +19,6 @@ A FastAPI web application that allows users to register on a TeamTalk server.
 - Test broadcast endpoint (`/api/broadcast`)
 - XSS protection with HTML escaping
 - Configurable via environment variables
-
-## Project Structure
-
-```
-teamtalk_reg_system/
-├── main.py              # Application entry point
-├── app/
-│   ├── __init__.py      # Package initialization
-│   ├── config.py        # Configuration settings
-│   ├── i18n.py          # Internationalization (Russian/English translations)
-│   ├── tt_bot.py        # TeamTalk bot worker
-│   ├── tt_file.py       # .tt file generation utilities
-│   ├── manager.py       # TeamTalk manager for process communication
-│   ├── routes.py        # FastAPI routes
-│   ├── templates/
-│   │   ├── base.html    # Registration form template
-│   │   └── success.html # Success page template
-│   └── static/
-│       └── style.css    # CSS styles
-├── pyproject.toml       # Project dependencies
-└── README.md
-```
 
 ## Requirements
 
@@ -77,15 +57,22 @@ nano .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TEAMTALK_HOST` | `denizsincar.ru` | TeamTalk server hostname |
+| `TEAMTALK_HOST` | `localhost` | TeamTalk server hostname (used in .tt files for end users) |
 | `TEAMTALK_TCP_PORT` | `10333` | TeamTalk TCP port |
 | `TEAMTALK_UDP_PORT` | `10333` | TeamTalk UDP port |
 | `TEAMTALK_USERNAME` | `bot` | Bot username for server connection |
 | `TEAMTALK_PASSWORD` | (required) | Bot password for server connection |
+| `USE_LOCALHOST_FOR_BOT` | `false` | If true, bot connects to localhost instead of TEAMTALK_HOST |
 | `APP_HOST` | `0.0.0.0` | Web server bind address (all IPs) |
 | `APP_PORT` | `8000` | Web server port |
 | `FORWARDED_ALLOW_IPS` | `*` | Allowed proxy IPs for X-Forwarded headers |
 | `ROOT_PATH` | (empty) | URL path prefix for reverse proxy with subpath (e.g., `/myapp`) |
+
+### Bot Connection Settings
+
+When `USE_LOCALHOST_FOR_BOT` is set to `true`, the bot will connect to the TeamTalk server using `localhost` instead of the `TEAMTALK_HOST` value. This is useful when running the web application on the same machine as the TeamTalk server.
+
+The `.tt` configuration files and `tt://` URLs generated for users will still use the `TEAMTALK_HOST` value, ensuring users can connect from external networks.
 
 ## Running the Application
 
@@ -168,19 +155,6 @@ The application uses a multiprocessing approach because the pytalk-ex library ru
 
 Communication between processes happens via multiprocessing Queues.
 
-### Modules
+## License
 
-- **config.py**: Contains all configuration constants and environment variable loading
-- **tt_bot.py**: TeamTalk bot worker that handles server connections and user operations
-- **tt_file.py**: Generates .tt configuration files and tt:// URLs
-- **manager.py**: Manages communication between FastAPI and the TeamTalk worker process
-- **routes.py**: FastAPI route handlers for the registration form
-
-## Development
-
-The original task description:
-
-> Create a fastapi web application that registers users on my teamtalk server denizsincar.ru.
-> It must receive a username and password from entered form data and register the user on the teamtalk server using the TeamTalk SDK.
-> The pytalk-ex library doesn't like other frameworks, so we can run teamtalk things in a separate process.
-> Also the website must check if this user already exists on the teamtalk server before registering.
+This project is open source. Created by Deniz Sincar ([denizsincar.ru](https://denizsincar.ru)).
