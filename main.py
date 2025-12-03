@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.config import APP_HOST, APP_PORT, FORWARDED_ALLOW_IPS, PROXY_HEADERS
+from app.config import APP_HOST, APP_PORT, FORWARDED_ALLOW_IPS, PROXY_HEADERS, ROOT_PATH
 from app.manager import tt_manager
 from app.routes import router
 
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     tt_manager.stop()
 
 
-app = FastAPI(title="TeamTalk Registration System", lifespan=lifespan)
+app = FastAPI(title="TeamTalk Registration System", lifespan=lifespan, root_path=ROOT_PATH)
 
 # Mount static files
 static_dir = Path(__file__).parent / "app" / "static"
@@ -45,7 +45,8 @@ if __name__ == "__main__":
         host=APP_HOST,
         port=APP_PORT,
         proxy_headers=PROXY_HEADERS,
-        forwarded_allow_ips=FORWARDED_ALLOW_IPS
+        forwarded_allow_ips=FORWARDED_ALLOW_IPS,
+        root_path=ROOT_PATH
     )
 
 

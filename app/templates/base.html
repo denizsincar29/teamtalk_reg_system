@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ t.page_title }}</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ request.scope.get('root_path', '') }}/static/style.css">
 </head>
 <body>
     <div class="language-switcher">
         <span>{{ t.language }}:</span>
-        <a href="/?lang=en" class="{% if lang == 'en' %}active{% endif %}">{{ t.english }}</a>
-        <a href="/?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">{{ t.russian }}</a>
+        <a href="{{ request.url_for('home') }}?lang=en" class="{% if lang == 'en' %}active{% endif %}">{{ t.english }}</a>
+        <a href="{{ request.url_for('home') }}?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">{{ t.russian }}</a>
     </div>
     <div class="form-container">
         <h1>{{ t.registration_header }}</h1>
         {{ message | safe }}
-        <form method="post" action="/register?lang={{ lang }}">
+        <form method="post" action="{{ request.url_for('register') }}?lang={{ lang }}">
             <div class="form-group">
                 <label for="username">{{ t.username_label }}</label>
                 <input type="text" id="username" name="username" required 

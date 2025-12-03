@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ t.success_title }}</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ request.scope.get('root_path', '') }}/static/style.css">
 </head>
 <body>
     <div class="language-switcher">
         <span>{{ t.language }}:</span>
-        <a href="/?lang=en" class="{% if lang == 'en' %}active{% endif %}">{{ t.english }}</a>
-        <a href="/?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">{{ t.russian }}</a>
+        <a href="{{ request.url_for('home') }}?lang=en" class="{% if lang == 'en' %}active{% endif %}">{{ t.english }}</a>
+        <a href="{{ request.url_for('home') }}?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">{{ t.russian }}</a>
     </div>
     <div class="form-container">
         <h1>{{ t.success_header }}</h1>
@@ -24,7 +24,7 @@
             <div class="option-group">
                 <h3>{{ t.option1_title }}</h3>
                 <p>{{ t.option1_desc }}</p>
-                <a href="/download-tt/{{ username }}/{{ password_encoded }}" class="btn btn-primary">
+                <a href="{{ request.url_for('download_tt_file', username=username, password_encoded=password_encoded) }}" class="btn btn-primary">
                     {{ download_btn }}
                 </a>
             </div>
@@ -49,7 +49,7 @@
         </div>
         
         <div class="back-link">
-            <a href="/?lang={{ lang }}">{{ t.back_link }}</a>
+            <a href="{{ request.url_for('home') }}?lang={{ lang }}">{{ t.back_link }}</a>
         </div>
     </div>
 </body>
