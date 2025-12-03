@@ -5,7 +5,9 @@ It runs the pytalk-ex library in a separate process to avoid blocking the main t
 """
 
 import asyncio
+import html
 import multiprocessing
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from multiprocessing import Process, Queue
@@ -16,13 +18,13 @@ from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse
 from pytalk import enums
 
-# Server configuration
+# Server configuration - credentials should be set via environment variables
 SERVER_CONFIG = {
-    "host": "denizsincar.ru",
-    "tcp_port": 10333,
-    "udp_port": 10333,
-    "username": "bot",
-    "password": "893200",
+    "host": os.environ.get("TEAMTALK_HOST", "denizsincar.ru"),
+    "tcp_port": int(os.environ.get("TEAMTALK_TCP_PORT", "10333")),
+    "udp_port": int(os.environ.get("TEAMTALK_UDP_PORT", "10333")),
+    "username": os.environ.get("TEAMTALK_USERNAME", "bot"),
+    "password": os.environ.get("TEAMTALK_PASSWORD", "893200"),
 }
 
 
@@ -348,7 +350,8 @@ async def register(
     exists, error = await tt_manager.check_user_exists(username)
     
     if error:
-        message = f'<div class="message error">Error checking user: {error}</div>'
+        escaped_error = html.escape(str(error))
+        message = f'<div class="message error">Error checking user: {escaped_error}</div>'
         return HTML_TEMPLATE.format(message=message)
     
     if exists:
@@ -359,10 +362,12 @@ async def register(
     success, error = await tt_manager.create_user(username, password)
     
     if success:
-        message = f'<div class="message success">User "{username}" registered successfully! You can now connect to the TeamTalk server.</div>'
+        escaped_username = html.escape(username)
+        message = f'<div class="message success">User "{escaped_username}" registered successfully! You can now connect to the TeamTalk server.</div>'
         return HTML_TEMPLATE.format(message=message)
     else:
-        message = f'<div class="message error">Failed to create user: {error}</div>'
+        escaped_error = html.escape(str(error))
+        message = f'<div class="message error">Failed to create user: {escaped_error}</div>'
         return HTML_TEMPLATE.format(message=message)
 
 
