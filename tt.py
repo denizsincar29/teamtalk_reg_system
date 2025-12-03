@@ -1,28 +1,38 @@
+"""Example TeamTalk bot script for testing connections.
+
+This is a standalone example script that demonstrates how to use pytalk-ex.
+It reads configuration from the .env file.
+"""
+
 import pytalk
-from pytalk import server, enums
+from pytalk import server
+
+# Import configuration from the app
+from app.config import BOT_SERVER_CONFIG
 
 bot = pytalk.TeamTalkBot()
 
-# this stupid library takes function name as event name!
-# IDE users, no autocompletion here! You lazy people!
+
 @bot.event
 async def on_ready():
-    my_server = {"host": "denizsincar.ru", "tcp_port": 10333, "udp_port": 10333, "username": "bot", "password": "893200"}
-    await bot.add_server(my_server)
+    """Called when the bot is ready to connect."""
+    await bot.add_server(BOT_SERVER_CONFIG)
+
 
 @bot.event
 async def on_error(ename: str, *args, **kwargs):
+    """Called when an error occurs."""
     print(f"Error in event {ename}: {args}, {kwargs}")
 
 
 @bot.event
-async def on_my_login(server: server.Server):
+async def on_my_login(srv: server.Server):
+    """Called when the bot successfully logs in."""
     print("Connected to the server!")
-    users = server.get_users()
-    print(users[0])
-
-    #result = server.teamtalk_instance.create_user_account("someuser", "12345", enums.UserType.DEFAULT)  # Don't know why this needs to be sync, i think because it just calls a dll function
-    #print("Account creation result:", result)
+    users = srv.get_users()
+    if users and users[0] is not None:
+        print(users[0])
 
 
-bot.run()  # this is a blocking call! Don't know how to run this with fastapi or other frameworks yet.
+if __name__ == "__main__":
+    bot.run()  # this is a blocking call

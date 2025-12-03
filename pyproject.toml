@@ -1,7 +1,7 @@
 [project]
 name = "teamtalk-reg-system"
 version = "0.1.0"
-description = "Add your description here"
+description = "A FastAPI web application for registering users on a TeamTalk server. Created by Deniz Sincar (denizsincar.ru)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
