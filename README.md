@@ -5,6 +5,7 @@ A FastAPI web application that allows users to register on a TeamTalk server.
 ## Features
 
 - Clean, responsive HTML registration form
+- **Multi-language support** (Russian and English)
 - Input validation (minimum username and password lengths)
 - Checks if user already exists before registration
 - Creates new user accounts on the TeamTalk server
@@ -25,6 +26,7 @@ teamtalk_reg_system/
 ├── app/
 │   ├── __init__.py      # Package initialization
 │   ├── config.py        # Configuration settings
+│   ├── i18n.py          # Internationalization (Russian/English translations)
 │   ├── tt_bot.py        # TeamTalk bot worker
 │   ├── tt_file.py       # .tt file generation utilities
 │   ├── manager.py       # TeamTalk manager for process communication

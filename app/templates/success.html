@@ -1,50 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registration Successful - TeamTalk</title>
+    <title>{{ t.success_title }}</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="language-switcher">
+        <span>{{ t.language }}:</span>
+        <a href="/?lang=en" class="{% if lang == 'en' %}active{% endif %}">{{ t.english }}</a>
+        <a href="/?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">{{ t.russian }}</a>
+    </div>
     <div class="form-container">
-        <h1>Registration Successful!</h1>
+        <h1>{{ t.success_header }}</h1>
         <div class="message success">
-            <p>User "<strong>{{ username }}</strong>" has been registered successfully!</p>
+            <p>{{ success_msg | safe }}</p>
         </div>
         
         <div class="connection-options">
-            <h2>Connect to TeamTalk Server</h2>
+            <h2>{{ t.connect_header }}</h2>
             
             <div class="option-group">
-                <h3>Option 1: Download .tt File</h3>
-                <p>Download a configuration file to open with TeamTalk client:</p>
+                <h3>{{ t.option1_title }}</h3>
+                <p>{{ t.option1_desc }}</p>
                 <a href="/download-tt/{{ username }}/{{ password_encoded }}" class="btn btn-primary">
-                    Download {{ username }}.tt
+                    {{ download_btn }}
                 </a>
             </div>
             
             <div class="option-group">
-                <h3>Option 2: Quick Connect</h3>
-                <p>Click the link below to connect directly (requires TeamTalk installed):</p>
+                <h3>{{ t.option2_title }}</h3>
+                <p>{{ t.option2_desc }}</p>
                 <a href="{{ tt_url }}" class="btn btn-secondary">
-                    Connect via tt:// URL
+                    {{ t.connect_button }}
                 </a>
             </div>
             
             <div class="option-group">
-                <h3>Server Details</h3>
+                <h3>{{ t.option3_title }}</h3>
                 <div class="server-info">
-                    <p><strong>Host:</strong> {{ host }}</p>
-                    <p><strong>TCP Port:</strong> {{ tcp_port }}</p>
-                    <p><strong>UDP Port:</strong> {{ udp_port }}</p>
-                    <p><strong>Username:</strong> {{ username }}</p>
+                    <p><strong>{{ t.host_label }}</strong> {{ host }}</p>
+                    <p><strong>{{ t.tcp_port_label }}</strong> {{ tcp_port }}</p>
+                    <p><strong>{{ t.udp_port_label }}</strong> {{ udp_port }}</p>
+                    <p><strong>{{ t.username_detail_label }}</strong> {{ username }}</p>
                 </div>
             </div>
         </div>
         
         <div class="back-link">
-            <a href="/">← Register another user</a>
+            <a href="/?lang={{ lang }}">{{ t.back_link }}</a>
         </div>
     </div>
 </body>

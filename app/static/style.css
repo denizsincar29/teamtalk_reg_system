@@ -26,6 +26,35 @@ h3 {
     margin-bottom: 10px;
 }
 
+/* Language switcher */
+.language-switcher {
+    text-align: right;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.language-switcher span {
+    color: #666;
+    margin-right: 5px;
+}
+
+.language-switcher a {
+    color: #4CAF50;
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+.language-switcher a:hover {
+    background-color: #e8f5e9;
+}
+
+.language-switcher a.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
 .form-container {
     background-color: white;
     padding: 30px;
