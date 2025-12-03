@@ -61,7 +61,19 @@ uv sync
 
 ## Configuration
 
-Set the following environment variables (or use defaults):
+Configuration can be set via environment variables or a `.env` file in the project root.
+
+1. Copy the example configuration:
+```bash
+cp .env.example .env
+```
+
+2. Edit `.env` with your settings:
+```bash
+nano .env
+```
+
+### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -77,10 +89,7 @@ Set the following environment variables (or use defaults):
 ## Running the Application
 
 ```bash
-# Set the TeamTalk password
-export TEAMTALK_PASSWORD=your_bot_password
-
-# Run the application
+# Run the application (reads from .env automatically)
 uv run main.py
 ```
 

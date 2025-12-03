@@ -1,6 +1,17 @@
-"""Application configuration settings."""
+"""Application configuration settings.
+
+All configuration is loaded from environment variables.
+You can set these in a .env file in the project root.
+"""
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env file from project root
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(env_path)
 
 # Application configuration constants
 MIN_USERNAME_LENGTH = 3
@@ -9,7 +20,7 @@ RESPONSE_TIMEOUT_SECONDS = 10
 RESPONSE_POLL_INTERVAL = 0.1
 STARTUP_DELAY_SECONDS = 5
 
-# Server configuration - credentials should be set via environment variables
+# Server configuration - credentials should be set via environment variables or .env file
 SERVER_CONFIG = {
     "host": os.environ.get("TEAMTALK_HOST", "denizsincar.ru"),
     "tcp_port": int(os.environ.get("TEAMTALK_TCP_PORT", "10333")),
