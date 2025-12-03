@@ -19,5 +19,9 @@ SERVER_CONFIG = {
 }
 
 # Web server configuration
-APP_HOST = os.environ.get("APP_HOST", "127.0.0.1")
+APP_HOST = os.environ.get("APP_HOST", "0.0.0.0")  # Allow all IPs by default
 APP_PORT = int(os.environ.get("APP_PORT", "8000"))
+
+# Proxy settings for Apache/Nginx reverse proxy
+PROXY_HEADERS = True  # Enable reading X-Forwarded-* headers
+FORWARDED_ALLOW_IPS = os.environ.get("FORWARDED_ALLOW_IPS", "*")  # Allow all proxy IPs

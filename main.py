@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.config import APP_HOST, APP_PORT
+from app.config import APP_HOST, APP_PORT, FORWARDED_ALLOW_IPS, PROXY_HEADERS
 from app.manager import tt_manager
 from app.routes import router
 
@@ -40,6 +40,12 @@ app.include_router(router)
 if __name__ == "__main__":
     import uvicorn
     multiprocessing.set_start_method("spawn", force=True)
-    uvicorn.run(app, host=APP_HOST, port=APP_PORT)
+    uvicorn.run(
+        app,
+        host=APP_HOST,
+        port=APP_PORT,
+        proxy_headers=PROXY_HEADERS,
+        forwarded_allow_ips=FORWARDED_ALLOW_IPS
+    )
 
 

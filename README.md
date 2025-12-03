@@ -70,8 +70,9 @@ Set the following environment variables (or use defaults):
 | `TEAMTALK_UDP_PORT` | `10333` | TeamTalk UDP port |
 | `TEAMTALK_USERNAME` | `bot` | Bot username for server connection |
 | `TEAMTALK_PASSWORD` | (required) | Bot password for server connection |
-| `APP_HOST` | `127.0.0.1` | Web server bind address |
+| `APP_HOST` | `0.0.0.0` | Web server bind address (all IPs) |
 | `APP_PORT` | `8000` | Web server port |
+| `FORWARDED_ALLOW_IPS` | `*` | Allowed proxy IPs for X-Forwarded headers |
 
 ## Running the Application
 
