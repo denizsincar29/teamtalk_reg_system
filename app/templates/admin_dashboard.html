@@ -1515,10 +1515,13 @@
                             newMessages.forEach(msg => {
                                 if (msg.type === 'private') {
                                     playPrivateNotification();
-                                    announceToScreenReader(translations.messages_private + ' ' + msg.from_user + ' ' + msg.content);
+                                    const msgText = translations.messages_private + ' ' + msg.from_user + ' ' + msg.content;
+                                    announceToScreenReader(msgText);
+                                    showNotification('TeamTalk - ' + translations.messages_private, msg.from_user + ': ' + msg.content, 'msg-private-' + Date.now());
                                 } else {
                                     playChannelNotification();
                                     announceToScreenReader(msg.from_user + ' ' + msg.content);
+                                    showNotification('TeamTalk', msg.from_user + ': ' + msg.content, 'msg-channel-' + Date.now());
                                 }
                             });
                         }
