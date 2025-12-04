@@ -470,6 +470,76 @@
             overflow-y: auto;
         }
         
+        /* Channel tree structure using native details/summary */
+        .channel-folder {
+            margin-bottom: 2px;
+        }
+        
+        .channel-folder > summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            list-style: none;
+            border: 1px solid #eee;
+        }
+        
+        .channel-folder > summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        .channel-folder > summary::before {
+            content: '▶';
+            font-size: 10px;
+            margin-right: 6px;
+            transition: transform 0.2s;
+        }
+        
+        .channel-folder[open] > summary::before {
+            transform: rotate(90deg);
+        }
+        
+        .channel-folder.current > summary {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .channel-folder.has-password > summary {
+            opacity: 0.7;
+        }
+        
+        .channel-children {
+            margin-left: 16px;
+            border-left: 1px solid #ddd;
+            padding-left: 8px;
+        }
+        
+        /* Root channel special styling - no folder marker */
+        .channel-root {
+            margin-bottom: 4px;
+        }
+        
+        .channel-root-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 4px;
+        }
+        
+        .channel-root-header.current {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
         .channel-item {
             display: flex;
             justify-content: space-between;
@@ -667,6 +737,9 @@
             channels_join: "{{ t.channels_join }}",
             channels_leave: "{{ t.channels_leave }}",
             channels_current: "{{ t.channels_current }}",
+            channels_root: "{{ t.channels_root }}",
+            channels_join_root: "{{ t.channels_join_root }}",
+            channels_leave_root: "{{ t.channels_leave_root }}",
             // Event translations
             event_user_login: "{{ t.event_user_login }}",
             event_user_logout: "{{ t.event_user_logout }}",
@@ -1073,57 +1146,218 @@
                         return;
                     }
                     
-                    // Build tree structure (parent_id = 0 is root)
-                    const sortedChannels = data.channels.sort((a, b) => a.id - b.id);
+                    // Build channel tree structure
+                    const channelMap = {};
+                    const rootChannels = [];
                     
-                    sortedChannels.forEach(channel => {
-                        const div = document.createElement('div');
-                        const isCurrent = channel.id === currentChannelId;
-                        div.className = 'channel-item' + (isCurrent ? ' current' : '') + (channel.has_password ? ' has-password' : '');
-                        
-                        const info = document.createElement('div');
-                        info.className = 'channel-info';
-                        
-                        if (channel.has_password) {
-                            const lock = document.createElement('span');
-                            lock.className = 'channel-lock';
-                            lock.textContent = '🔒';
-                            info.appendChild(lock);
-                        }
-                        
-                        const nameSpan = document.createElement('span');
-                        nameSpan.className = 'channel-name';
-                        nameSpan.textContent = channel.name || channel.path || 'Channel ' + channel.id;
-                        nameSpan.title = channel.path || '';
-                        info.appendChild(nameSpan);
-                        
-                        div.appendChild(info);
-                        
-                        // Bot can join any channel (admin can bypass password)
-                        if (isCurrent) {
-                            const badge = document.createElement('span');
-                            badge.className = 'channel-current-badge';
-                            badge.textContent = translations.channels_current;
-                            div.appendChild(badge);
-                            
-                            const leaveBtn = document.createElement('button');
-                            leaveBtn.className = 'channel-btn leave';
-                            leaveBtn.textContent = translations.channels_leave;
-                            leaveBtn.onclick = () => leaveChannel();
-                            div.appendChild(leaveBtn);
-                        } else {
-                            const joinBtn = document.createElement('button');
-                            joinBtn.className = 'channel-btn join';
-                            joinBtn.textContent = translations.channels_join;
-                            joinBtn.onclick = () => joinChannel(channel.id);
-                            div.appendChild(joinBtn);
-                        }
-                        
-                        list.appendChild(div);
+                    // First pass: create map of all channels
+                    data.channels.forEach(channel => {
+                        channelMap[channel.id] = { ...channel, children: [] };
                     });
+                    
+                    // Second pass: build tree structure
+                    data.channels.forEach(channel => {
+                        if (channel.parent_id && channelMap[channel.parent_id]) {
+                            channelMap[channel.parent_id].children.push(channelMap[channel.id]);
+                        } else {
+                            rootChannels.push(channelMap[channel.id]);
+                        }
+                    });
+                    
+                    // Sort by id
+                    rootChannels.sort((a, b) => a.id - b.id);
+                    
+                    // Find the actual root channel (id=1 typically)
+                    const rootChannel = rootChannels.find(c => c.id === 1) || rootChannels[0];
+                    
+                    if (rootChannel) {
+                        // Render root channel specially (always expanded, no folder marker)
+                        renderRootChannel(list, rootChannel);
+                    } else {
+                        // No root channel, render all as flat list
+                        rootChannels.forEach(channel => {
+                            renderChannelTree(list, channel, false);
+                        });
+                    }
                 }
             } catch (error) {
                 console.error('Error loading channels:', error);
+            }
+        }
+        
+        // Render root channel (always expanded, special handling)
+        function renderRootChannel(container, channel) {
+            const rootDiv = document.createElement('div');
+            rootDiv.className = 'channel-root';
+            
+            // Root channel header
+            const header = document.createElement('div');
+            const isCurrent = channel.id === currentChannelId;
+            const isOutOfChannels = currentChannelId === 0;
+            header.className = 'channel-root-header' + (isCurrent ? ' current' : '');
+            
+            const info = document.createElement('div');
+            info.className = 'channel-info';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'channel-name';
+            nameSpan.textContent = translations.channels_root;
+            info.appendChild(nameSpan);
+            
+            if (isCurrent) {
+                const badge = document.createElement('span');
+                badge.className = 'channel-current-badge';
+                badge.textContent = translations.channels_current;
+                info.appendChild(badge);
+            }
+            
+            header.appendChild(info);
+            
+            // Root channel buttons
+            if (isOutOfChannels) {
+                // Not in any channel - show "Join Root" button
+                const joinBtn = document.createElement('button');
+                joinBtn.className = 'channel-btn join';
+                joinBtn.textContent = translations.channels_join_root;
+                joinBtn.onclick = () => joinChannel(channel.id);
+                header.appendChild(joinBtn);
+            } else if (isCurrent) {
+                // In root channel - show "Leave Root" button
+                const leaveBtn = document.createElement('button');
+                leaveBtn.className = 'channel-btn leave';
+                leaveBtn.textContent = translations.channels_leave_root;
+                leaveBtn.onclick = () => leaveChannel();
+                header.appendChild(leaveBtn);
+            }
+            
+            rootDiv.appendChild(header);
+            
+            // Render children directly (no collapse)
+            if (channel.children && channel.children.length > 0) {
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'channel-children';
+                
+                channel.children.sort((a, b) => a.id - b.id).forEach(child => {
+                    renderChannelTree(childrenDiv, child, true);
+                });
+                
+                rootDiv.appendChild(childrenDiv);
+            }
+            
+            container.appendChild(rootDiv);
+        }
+        
+        // Render channel tree recursively using native details/summary for accessibility
+        function renderChannelTree(container, channel, isNested) {
+            const hasChildren = channel.children && channel.children.length > 0;
+            const isCurrent = channel.id === currentChannelId;
+            
+            if (hasChildren) {
+                // Channel with children - use details/summary for expandable
+                const details = document.createElement('details');
+                details.className = 'channel-folder' + (isCurrent ? ' current' : '') + (channel.has_password ? ' has-password' : '');
+                
+                const summary = document.createElement('summary');
+                
+                const info = document.createElement('div');
+                info.className = 'channel-info';
+                
+                if (channel.has_password) {
+                    const lock = document.createElement('span');
+                    lock.className = 'channel-lock';
+                    lock.textContent = '🔒';
+                    info.appendChild(lock);
+                }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'channel-name';
+                nameSpan.textContent = channel.name || channel.path || 'Channel ' + channel.id;
+                nameSpan.title = channel.path || '';
+                info.appendChild(nameSpan);
+                
+                summary.appendChild(info);
+                
+                // Buttons container
+                const btnContainer = document.createElement('span');
+                btnContainer.style.display = 'flex';
+                btnContainer.style.gap = '4px';
+                btnContainer.style.alignItems = 'center';
+                
+                if (isCurrent) {
+                    const badge = document.createElement('span');
+                    badge.className = 'channel-current-badge';
+                    badge.textContent = translations.channels_current;
+                    btnContainer.appendChild(badge);
+                    
+                    const leaveBtn = document.createElement('button');
+                    leaveBtn.className = 'channel-btn leave';
+                    leaveBtn.textContent = translations.channels_leave;
+                    leaveBtn.onclick = (e) => { e.stopPropagation(); leaveChannel(); };
+                    btnContainer.appendChild(leaveBtn);
+                } else {
+                    const joinBtn = document.createElement('button');
+                    joinBtn.className = 'channel-btn join';
+                    joinBtn.textContent = translations.channels_join;
+                    joinBtn.onclick = (e) => { e.stopPropagation(); joinChannel(channel.id); };
+                    btnContainer.appendChild(joinBtn);
+                }
+                
+                summary.appendChild(btnContainer);
+                details.appendChild(summary);
+                
+                // Children container
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'channel-children';
+                
+                channel.children.sort((a, b) => a.id - b.id).forEach(child => {
+                    renderChannelTree(childrenDiv, child, true);
+                });
+                
+                details.appendChild(childrenDiv);
+                container.appendChild(details);
+            } else {
+                // Leaf channel - simple item
+                const div = document.createElement('div');
+                div.className = 'channel-item' + (isCurrent ? ' current' : '') + (channel.has_password ? ' has-password' : '');
+                
+                const info = document.createElement('div');
+                info.className = 'channel-info';
+                
+                if (channel.has_password) {
+                    const lock = document.createElement('span');
+                    lock.className = 'channel-lock';
+                    lock.textContent = '🔒';
+                    info.appendChild(lock);
+                }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'channel-name';
+                nameSpan.textContent = channel.name || channel.path || 'Channel ' + channel.id;
+                nameSpan.title = channel.path || '';
+                info.appendChild(nameSpan);
+                
+                div.appendChild(info);
+                
+                if (isCurrent) {
+                    const badge = document.createElement('span');
+                    badge.className = 'channel-current-badge';
+                    badge.textContent = translations.channels_current;
+                    div.appendChild(badge);
+                    
+                    const leaveBtn = document.createElement('button');
+                    leaveBtn.className = 'channel-btn leave';
+                    leaveBtn.textContent = translations.channels_leave;
+                    leaveBtn.onclick = () => leaveChannel();
+                    div.appendChild(leaveBtn);
+                } else {
+                    const joinBtn = document.createElement('button');
+                    joinBtn.className = 'channel-btn join';
+                    joinBtn.textContent = translations.channels_join;
+                    joinBtn.onclick = () => joinChannel(channel.id);
+                    div.appendChild(joinBtn);
+                }
+                
+                container.appendChild(div);
             }
         }
         
@@ -1620,10 +1854,30 @@
                 .catch(err => console.log('Service Worker registration failed:', err));
         }
         
+        // Check and update notification banner visibility
+        function updateNotificationBanner() {
+            const banner = document.getElementById('sound-banner');
+            const hasNotificationAPI = 'Notification' in window;
+            
+            if (hasNotificationAPI && Notification.permission === 'granted') {
+                // Notifications already granted, hide the banner
+                banner.classList.add('hidden');
+                notificationsEnabled = true;
+                soundEnabled = true;
+                // Initialize audio context (will need user interaction to resume if suspended)
+                initAudioContext();
+            } else if (hasNotificationAPI && Notification.permission === 'denied') {
+                // Notifications denied, hide the banner (user can't enable them anyway)
+                banner.classList.add('hidden');
+            }
+            // If permission is 'default', keep the banner visible
+        }
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadOnlineUsers();
             connectToStream();
+            updateNotificationBanner();
             
             // Refresh online users periodically
             setInterval(loadOnlineUsers, 30000);
