@@ -214,6 +214,13 @@
             border-bottom-left-radius: 4px;
         }
         
+        .message.broadcast .message-bubble {
+            background: #fff3cd;
+            color: #856404;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #ffc107;
+        }
+        
         .message.sent .message-bubble {
             background: #4CAF50;
             color: white;
@@ -239,6 +246,11 @@
             border-radius: 10px;
             background: #6c5ce7;
             color: white;
+        }
+        
+        .message-type-badge.broadcast {
+            background: #ffc107;
+            color: #856404;
         }
         
         .message-content {
@@ -470,6 +482,76 @@
             overflow-y: auto;
         }
         
+        /* Channel tree structure using native details/summary */
+        .channel-folder {
+            margin-bottom: 2px;
+        }
+        
+        .channel-folder > summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            list-style: none;
+            border: 1px solid #eee;
+        }
+        
+        .channel-folder > summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        .channel-folder > summary::before {
+            content: '▶';
+            font-size: 10px;
+            margin-right: 6px;
+            transition: transform 0.2s;
+        }
+        
+        .channel-folder[open] > summary::before {
+            transform: rotate(90deg);
+        }
+        
+        .channel-folder.current > summary {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .channel-folder.has-password > summary {
+            opacity: 0.7;
+        }
+        
+        .channel-children {
+            margin-left: 16px;
+            border-left: 1px solid #ddd;
+            padding-left: 8px;
+        }
+        
+        /* Root channel special styling - no folder marker */
+        .channel-root {
+            margin-bottom: 4px;
+        }
+        
+        .channel-root-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 4px;
+        }
+        
+        .channel-root-header.current {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
         .channel-item {
             display: flex;
             justify-content: space-between;
@@ -539,6 +621,181 @@
             padding: 2px 6px;
             border-radius: 3px;
         }
+        
+        /* Scheduler styles */
+        .scheduler-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .scheduler-add-btn {
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .scheduler-add-btn:hover {
+            background: #45a049;
+        }
+        
+        .tasks-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .task-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .task-item.disabled {
+            opacity: 0.6;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .task-name {
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .task-type-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #6c5ce7;
+            color: white;
+        }
+        
+        .task-type-badge.broadcast {
+            background: #ffc107;
+            color: #856404;
+        }
+        
+        .task-details {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .task-btn {
+            padding: 3px 8px;
+            font-size: 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .task-btn.run { background: #17a2b8; color: white; }
+        .task-btn.toggle { background: #6c757d; color: white; }
+        .task-btn.edit { background: #ffc107; color: #333; }
+        .task-btn.delete { background: #dc3545; color: white; }
+        
+        .empty-tasks {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+            font-size: 13px;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-content h3 {
+            margin: 0 0 15px 0;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-cancel {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-save {
+            padding: 8px 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -566,6 +823,7 @@
                 <div class="tabs">
                     <button class="tab-btn active" onclick="showSidebarTab('online')">{{ t.tab_online }}</button>
                     <button class="tab-btn" onclick="showSidebarTab('channels')">{{ t.channels_header }}</button>
+                    <button class="tab-btn" onclick="showSidebarTab('scheduler')">{{ t.scheduler_header }}</button>
                     <button class="tab-btn" onclick="showSidebarTab('accounts')">{{ t.tab_accounts }}</button>
                 </div>
                 
@@ -578,6 +836,15 @@
                 <div id="channels-tab" class="tab-content">
                     <div class="channels-list" id="channels-list">
                         <div class="loading">Loading...</div>
+                    </div>
+                </div>
+                
+                <div id="scheduler-tab" class="tab-content">
+                    <div class="scheduler-section">
+                        <button class="scheduler-add-btn" onclick="openAddTaskModal()">{{ t.scheduler_add_task }}</button>
+                        <div class="tasks-list" id="tasks-list">
+                            <div class="empty-tasks">{{ t.scheduler_no_tasks }}</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -635,6 +902,78 @@
     <!-- Screenreader announcements (ARIA live region) -->
     <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true" role="status"></div>
     
+    <!-- Task Modal -->
+    <div class="modal" id="task-modal">
+        <div class="modal-content">
+            <h3 id="task-modal-title">{{ t.scheduler_add_task }}</h3>
+            <form id="task-form" onsubmit="saveTask(event)">
+                <input type="hidden" id="task-id" value="">
+                
+                <div class="form-group">
+                    <label for="task-name">{{ t.scheduler_task_name }}</label>
+                    <input type="text" id="task-name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="task-type">{{ t.scheduler_task_type }}</label>
+                    <select id="task-type" onchange="onTaskTypeChange()">
+                        <option value="broadcast">{{ t.scheduler_broadcast }}</option>
+                        <option value="channel_message">{{ t.scheduler_channel_message }}</option>
+                        <option value="pm_online">{{ t.scheduler_pm_online }}</option>
+                        <option value="pm_offline_queue">{{ t.scheduler_pm_offline_queue }}</option>
+                        <option value="on_user_login">{{ t.scheduler_on_user_login }}</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="task-message">{{ t.scheduler_message }}</label>
+                    <textarea id="task-message" rows="3" required></textarea>
+                </div>
+                
+                <div class="form-group" id="channel-select-group" style="display: none;">
+                    <label for="task-channel">{{ t.scheduler_target_channel }}</label>
+                    <select id="task-channel">
+                        <option value="0">-- {{ t.scheduler_target_channel }} --</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="username-group" style="display: none;">
+                    <label for="task-username">{{ t.scheduler_target_username }}</label>
+                    <input type="text" id="task-username" placeholder="{{ t.scheduler_any_user }}">
+                </div>
+                
+                <div class="form-group" id="delay-group" style="display: none;">
+                    <label>{{ t.scheduler_delay_seconds }}</label>
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label for="task-delay-min" style="font-size: 11px;">{{ t.scheduler_delay_min }}</label>
+                            <input type="number" id="task-delay-min" min="0" value="0">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="task-delay-max" style="font-size: 11px;">{{ t.scheduler_delay_max }}</label>
+                            <input type="number" id="task-delay-max" min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="time-group">
+                    <label for="task-time">{{ t.scheduler_scheduled_time }}</label>
+                    <input type="datetime-local" id="task-time">
+                </div>
+                
+                <div class="form-group" id="recurring-group">
+                    <label for="task-recurring">{{ t.scheduler_every_minutes }} (0 = {{ t.scheduler_one_time }})</label>
+                    <input type="number" id="task-recurring" min="0" value="0">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeTaskModal()">{{ t.scheduler_cancel }}</button>
+                    <button type="submit" class="btn-save">{{ t.scheduler_save }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <style>
         /* Screenreader only - visually hidden but accessible */
         .sr-only {
@@ -667,6 +1006,9 @@
             channels_join: "{{ t.channels_join }}",
             channels_leave: "{{ t.channels_leave }}",
             channels_current: "{{ t.channels_current }}",
+            channels_root: "{{ t.channels_root }}",
+            channels_join_root: "{{ t.channels_join_root }}",
+            channels_leave_root: "{{ t.channels_leave_root }}",
             // Event translations
             event_user_login: "{{ t.event_user_login }}",
             event_user_logout: "{{ t.event_user_logout }}",
@@ -677,7 +1019,28 @@
             event_bot_connected: "{{ t.event_bot_connected }}",
             event_connection_lost: "{{ t.event_connection_lost }}",
             event_root_channel: "{{ t.event_root_channel }}",
-            event_root_channel_genitive: "{{ t.event_root_channel_genitive }}"
+            event_root_channel_genitive: "{{ t.event_root_channel_genitive }}",
+            // Scheduler translations
+            scheduler_broadcast: "{{ t.scheduler_broadcast }}",
+            scheduler_channel_message: "{{ t.scheduler_channel_message }}",
+            scheduler_pm_online: "{{ t.scheduler_pm_online }}",
+            scheduler_pm_offline_queue: "{{ t.scheduler_pm_offline_queue }}",
+            scheduler_on_user_login: "{{ t.scheduler_on_user_login }}",
+            scheduler_event_triggered: "{{ t.scheduler_event_triggered }}",
+            scheduler_enabled: "{{ t.scheduler_enabled }}",
+            scheduler_disabled: "{{ t.scheduler_disabled }}",
+            scheduler_run_now: "{{ t.scheduler_run_now }}",
+            scheduler_edit: "{{ t.scheduler_edit }}",
+            scheduler_delete: "{{ t.scheduler_delete }}",
+            scheduler_no_tasks: "{{ t.scheduler_no_tasks }}",
+            scheduler_task_created: "{{ t.scheduler_task_created }}",
+            scheduler_task_updated: "{{ t.scheduler_task_updated }}",
+            scheduler_task_deleted: "{{ t.scheduler_task_deleted }}",
+            scheduler_task_executed: "{{ t.scheduler_task_executed }}",
+            scheduler_error: "{{ t.scheduler_error }}",
+            scheduler_add_task: "{{ t.scheduler_add_task }}",
+            scheduler_every_minutes: "{{ t.scheduler_every_minutes }}",
+            scheduler_one_time: "{{ t.scheduler_one_time }}"
         };
         
         // State
@@ -691,6 +1054,7 @@
         let lastEventCount = 0;
         let eventSource = null;
         let selectedMentionIndex = 0;
+        let audioUnlocked = false;
         
         // Initialize AudioContext
         function initAudioContext() {
@@ -698,6 +1062,56 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
             return audioContext;
+        }
+        
+        // Unlock audio context with a silent sound - must be called from user gesture
+        function unlockAudioContext() {
+            if (audioUnlocked) return;
+            
+            try {
+                const ctx = initAudioContext();
+                
+                // Resume if suspended
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                
+                // Play a silent sound to fully unlock the audio context
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                gainNode.gain.value = 0.001; // Nearly silent
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.001);
+                
+                audioUnlocked = true;
+                soundEnabled = true;
+                console.log('Audio context unlocked');
+            } catch (e) {
+                console.log('Could not unlock audio context:', e);
+            }
+        }
+        
+        // Attach audio unlock to common user interactions
+        function setupAudioUnlock() {
+            const unlockEvents = ['click', 'touchstart', 'touchend', 'keydown', 'mousedown'];
+            
+            const unlockHandler = () => {
+                unlockAudioContext();
+                // Remove listeners after first unlock to avoid overhead
+                if (audioUnlocked) {
+                    unlockEvents.forEach(event => {
+                        document.removeEventListener(event, unlockHandler, true);
+                    });
+                }
+            };
+            
+            unlockEvents.forEach(event => {
+                document.addEventListener(event, unlockHandler, true);
+            });
         }
         
         // Enable notifications (Web Notifications API)
@@ -708,16 +1122,12 @@
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
                         notificationsEnabled = true;
-                        // Also enable sound
-                        const ctx = initAudioContext();
-                        if (ctx.state === 'suspended') {
-                            ctx.resume();
-                        }
-                        soundEnabled = true;
+                        // Also enable sound via unlock mechanism
+                        unlockAudioContext();
                         document.getElementById('sound-banner').classList.add('hidden');
                         showToast(translations.sound_enabled, true);
-                        // Show a test notification
-                        showNotification('TeamTalk Admin', translations.sound_enabled);
+                        // Show a test notification (always shows to confirm it's working)
+                        showTestNotification('TeamTalk Admin', translations.sound_enabled);
                     } else {
                         // Fallback to just audio if notifications denied
                         enableSound();
@@ -732,10 +1142,14 @@
             }
         }
         
-        // Show Web Notification
+        // Show Web Notification - only when app is in background
         function showNotification(title, body, tag = null) {
             if (!notificationsEnabled || !('Notification' in window)) return;
             if (Notification.permission !== 'granted') return;
+            
+            // Only show notification when the page is not visible (app in background)
+            // This works for both desktop browsers and mobile PWAs (including iOS)
+            if (document.visibilityState === 'visible') return;
             
             try {
                 const options = {
@@ -752,14 +1166,30 @@
             }
         }
         
+        // Show test notification (always shows, bypasses visibility check)
+        function showTestNotification(title, body) {
+            if (!('Notification' in window)) return;
+            if (Notification.permission !== 'granted') return;
+            
+            try {
+                const options = {
+                    body: body,
+                    icon: '/static/icon-192.svg',
+                    badge: '/static/icon-192.svg',
+                    tag: 'teamtalk-test',
+                    renotify: false,
+                    requireInteraction: false
+                };
+                new Notification(title, options);
+            } catch (e) {
+                console.log('Error showing test notification:', e);
+            }
+        }
+        
         // Enable sound on user interaction (fallback)
         function enableSound() {
             try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') {
-                    ctx.resume();
-                }
-                soundEnabled = true;
+                unlockAudioContext();  // Use the unlock function
                 document.getElementById('sound-banner').classList.add('hidden');
                 showToast(translations.sound_enabled, true);
                 // Play a test sound
@@ -819,6 +1249,34 @@
                     gain.connect(ctx.destination);
                     osc.start(now + i * 0.15);
                     osc.stop(now + i * 0.15 + 0.35);
+                });
+            } catch (e) {}
+        }
+        
+        // Broadcast message notification - softer TeamTalk-style chime
+        function playBroadcastNotification() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                // Eb4 -> Bb4 -> E4 -> Eb5 (TeamTalk-style broadcast chime)
+                // Eb4=311.13Hz, Bb4=466.16Hz, E4=329.63Hz, Eb5=622.25Hz
+                const notes = [311.13, 466.16, 329.63, 622.25];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine'; // Softer waveform like TeamTalk client
+                    osc.frequency.setValueAtTime(freq, now + i * 0.12);
+                    gain.gain.setValueAtTime(0, now + i * 0.12);
+                    gain.gain.linearRampToValueAtTime(0.12, now + i * 0.12 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.12);
+                    osc.stop(now + i * 0.12 + 0.2);
                 });
             } catch (e) {}
         }
@@ -1030,6 +1488,7 @@
             if (tabName === 'accounts') loadAccounts();
             if (tabName === 'online') loadOnlineUsers();
             if (tabName === 'channels') loadChannels();
+            if (tabName === 'scheduler') loadTasks();
         }
         
         // Load channels
@@ -1049,57 +1508,218 @@
                         return;
                     }
                     
-                    // Build tree structure (parent_id = 0 is root)
-                    const sortedChannels = data.channels.sort((a, b) => a.id - b.id);
+                    // Build channel tree structure
+                    const channelMap = {};
+                    const rootChannels = [];
                     
-                    sortedChannels.forEach(channel => {
-                        const div = document.createElement('div');
-                        const isCurrent = channel.id === currentChannelId;
-                        div.className = 'channel-item' + (isCurrent ? ' current' : '') + (channel.has_password ? ' has-password' : '');
-                        
-                        const info = document.createElement('div');
-                        info.className = 'channel-info';
-                        
-                        if (channel.has_password) {
-                            const lock = document.createElement('span');
-                            lock.className = 'channel-lock';
-                            lock.textContent = '🔒';
-                            info.appendChild(lock);
-                        }
-                        
-                        const nameSpan = document.createElement('span');
-                        nameSpan.className = 'channel-name';
-                        nameSpan.textContent = channel.name || channel.path || 'Channel ' + channel.id;
-                        nameSpan.title = channel.path || '';
-                        info.appendChild(nameSpan);
-                        
-                        div.appendChild(info);
-                        
-                        // Bot can join any channel (admin can bypass password)
-                        if (isCurrent) {
-                            const badge = document.createElement('span');
-                            badge.className = 'channel-current-badge';
-                            badge.textContent = translations.channels_current;
-                            div.appendChild(badge);
-                            
-                            const leaveBtn = document.createElement('button');
-                            leaveBtn.className = 'channel-btn leave';
-                            leaveBtn.textContent = translations.channels_leave;
-                            leaveBtn.onclick = () => leaveChannel();
-                            div.appendChild(leaveBtn);
-                        } else {
-                            const joinBtn = document.createElement('button');
-                            joinBtn.className = 'channel-btn join';
-                            joinBtn.textContent = translations.channels_join;
-                            joinBtn.onclick = () => joinChannel(channel.id);
-                            div.appendChild(joinBtn);
-                        }
-                        
-                        list.appendChild(div);
+                    // First pass: create map of all channels
+                    data.channels.forEach(channel => {
+                        channelMap[channel.id] = { ...channel, children: [] };
                     });
+                    
+                    // Second pass: build tree structure
+                    data.channels.forEach(channel => {
+                        if (channel.parent_id && channelMap[channel.parent_id]) {
+                            channelMap[channel.parent_id].children.push(channelMap[channel.id]);
+                        } else {
+                            rootChannels.push(channelMap[channel.id]);
+                        }
+                    });
+                    
+                    // Sort by id
+                    rootChannels.sort((a, b) => a.id - b.id);
+                    
+                    // Find the actual root channel (id=1 typically)
+                    const rootChannel = rootChannels.find(c => c.id === 1) || rootChannels[0];
+                    
+                    if (rootChannel) {
+                        // Render root channel specially (always expanded, no folder marker)
+                        renderRootChannel(list, rootChannel);
+                    } else {
+                        // No root channel, render all as flat list
+                        rootChannels.forEach(channel => {
+                            renderChannelTree(list, channel, false);
+                        });
+                    }
                 }
             } catch (error) {
                 console.error('Error loading channels:', error);
+            }
+        }
+        
+        // Render root channel (always expanded, special handling)
+        function renderRootChannel(container, channel) {
+            const rootDiv = document.createElement('div');
+            rootDiv.className = 'channel-root';
+            
+            // Root channel header
+            const header = document.createElement('div');
+            const isCurrent = channel.id === currentChannelId;
+            const isOutOfChannels = currentChannelId === 0;
+            header.className = 'channel-root-header' + (isCurrent ? ' current' : '');
+            
+            const info = document.createElement('div');
+            info.className = 'channel-info';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'channel-name';
+            nameSpan.textContent = translations.channels_root;
+            info.appendChild(nameSpan);
+            
+            if (isCurrent) {
+                const badge = document.createElement('span');
+                badge.className = 'channel-current-badge';
+                badge.textContent = translations.channels_current;
+                info.appendChild(badge);
+            }
+            
+            header.appendChild(info);
+            
+            // Root channel buttons
+            if (isOutOfChannels) {
+                // Not in any channel - show "Join Root" button
+                const joinBtn = document.createElement('button');
+                joinBtn.className = 'channel-btn join';
+                joinBtn.textContent = translations.channels_join_root;
+                joinBtn.onclick = () => joinChannel(channel.id);
+                header.appendChild(joinBtn);
+            } else if (isCurrent) {
+                // In root channel - show "Leave Root" button
+                const leaveBtn = document.createElement('button');
+                leaveBtn.className = 'channel-btn leave';
+                leaveBtn.textContent = translations.channels_leave_root;
+                leaveBtn.onclick = () => leaveChannel();
+                header.appendChild(leaveBtn);
+            }
+            
+            rootDiv.appendChild(header);
+            
+            // Render children directly (no collapse)
+            if (channel.children && channel.children.length > 0) {
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'channel-children';
+                
+                channel.children.sort((a, b) => a.id - b.id).forEach(child => {
+                    renderChannelTree(childrenDiv, child, true);
+                });
+                
+                rootDiv.appendChild(childrenDiv);
+            }
+            
+            container.appendChild(rootDiv);
+        }
+        
+        // Render channel tree recursively using native details/summary for accessibility
+        function renderChannelTree(container, channel, isNested) {
+            const hasChildren = channel.children && channel.children.length > 0;
+            const isCurrent = channel.id === currentChannelId;
+            
+            if (hasChildren) {
+                // Channel with children - use details/summary for expandable
+                const details = document.createElement('details');
+                details.className = 'channel-folder' + (isCurrent ? ' current' : '') + (channel.has_password ? ' has-password' : '');
+                
+                const summary = document.createElement('summary');
+                
+                const info = document.createElement('div');
+                info.className = 'channel-info';
+                
+                if (channel.has_password) {
+                    const lock = document.createElement('span');
+                    lock.className = 'channel-lock';
+                    lock.textContent = '🔒';
+                    info.appendChild(lock);
+                }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'channel-name';
+                nameSpan.textContent = channel.name || channel.path || 'Channel ' + channel.id;
+                nameSpan.title = channel.path || '';
+                info.appendChild(nameSpan);
+                
+                summary.appendChild(info);
+                
+                // Buttons container
+                const btnContainer = document.createElement('span');
+                btnContainer.style.display = 'flex';
+                btnContainer.style.gap = '4px';
+                btnContainer.style.alignItems = 'center';
+                
+                if (isCurrent) {
+                    const badge = document.createElement('span');
+                    badge.className = 'channel-current-badge';
+                    badge.textContent = translations.channels_current;
+                    btnContainer.appendChild(badge);
+                    
+                    const leaveBtn = document.createElement('button');
+                    leaveBtn.className = 'channel-btn leave';
+                    leaveBtn.textContent = translations.channels_leave;
+                    leaveBtn.onclick = (e) => { e.stopPropagation(); leaveChannel(); };
+                    btnContainer.appendChild(leaveBtn);
+                } else {
+                    const joinBtn = document.createElement('button');
+                    joinBtn.className = 'channel-btn join';
+                    joinBtn.textContent = translations.channels_join;
+                    joinBtn.onclick = (e) => { e.stopPropagation(); joinChannel(channel.id); };
+                    btnContainer.appendChild(joinBtn);
+                }
+                
+                summary.appendChild(btnContainer);
+                details.appendChild(summary);
+                
+                // Children container
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'channel-children';
+                
+                channel.children.sort((a, b) => a.id - b.id).forEach(child => {
+                    renderChannelTree(childrenDiv, child, true);
+                });
+                
+                details.appendChild(childrenDiv);
+                container.appendChild(details);
+            } else {
+                // Leaf channel - simple item
+                const div = document.createElement('div');
+                div.className = 'channel-item' + (isCurrent ? ' current' : '') + (channel.has_password ? ' has-password' : '');
+                
+                const info = document.createElement('div');
+                info.className = 'channel-info';
+                
+                if (channel.has_password) {
+                    const lock = document.createElement('span');
+                    lock.className = 'channel-lock';
+                    lock.textContent = '🔒';
+                    info.appendChild(lock);
+                }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'channel-name';
+                nameSpan.textContent = channel.name || channel.path || 'Channel ' + channel.id;
+                nameSpan.title = channel.path || '';
+                info.appendChild(nameSpan);
+                
+                div.appendChild(info);
+                
+                if (isCurrent) {
+                    const badge = document.createElement('span');
+                    badge.className = 'channel-current-badge';
+                    badge.textContent = translations.channels_current;
+                    div.appendChild(badge);
+                    
+                    const leaveBtn = document.createElement('button');
+                    leaveBtn.className = 'channel-btn leave';
+                    leaveBtn.textContent = translations.channels_leave;
+                    leaveBtn.onclick = () => leaveChannel();
+                    div.appendChild(leaveBtn);
+                } else {
+                    const joinBtn = document.createElement('button');
+                    joinBtn.className = 'channel-btn join';
+                    joinBtn.textContent = translations.channels_join;
+                    joinBtn.onclick = () => joinChannel(channel.id);
+                    div.appendChild(joinBtn);
+                }
+                
+                container.appendChild(div);
             }
         }
         
@@ -1260,6 +1880,11 @@
                     const badge = document.createElement('span');
                     badge.className = 'message-type-badge';
                     badge.textContent = translations.messages_private;
+                    meta.appendChild(badge);
+                } else if (msg.type === 'broadcast') {
+                    const badge = document.createElement('span');
+                    badge.className = 'message-type-badge broadcast';
+                    badge.textContent = translations.messages_broadcast;
                     meta.appendChild(badge);
                 }
                 
@@ -1513,7 +2138,7 @@
                     if (data.messages) {
                         // Check for new messages to play notification
                         if (data.messages.length > lastMessageCount && lastMessageCount > 0) {
-                            // Check if the newest message is private or channel
+                            // Check if the newest message is private, broadcast, or channel
                             const newMessages = data.messages.slice(lastMessageCount);
                             newMessages.forEach(msg => {
                                 if (msg.type === 'private') {
@@ -1521,6 +2146,11 @@
                                     const msgText = translations.messages_private + ' ' + msg.from_user + ' ' + msg.content;
                                     announceToScreenReader(msgText);
                                     showNotification('TeamTalk - ' + translations.messages_private, msg.from_user + ': ' + msg.content, 'msg-private-' + Date.now());
+                                } else if (msg.type === 'broadcast') {
+                                    playBroadcastNotification();
+                                    const msgText = translations.messages_broadcast + ' ' + msg.from_user + ' ' + msg.content;
+                                    announceToScreenReader(msgText);
+                                    showNotification('TeamTalk - ' + translations.messages_broadcast, msg.from_user + ': ' + msg.content, 'msg-broadcast-' + Date.now());
                                 } else {
                                     playChannelNotification();
                                     announceToScreenReader(msg.from_user + ' ' + msg.content);
@@ -1596,10 +2226,31 @@
                 .catch(err => console.log('Service Worker registration failed:', err));
         }
         
+        // Check and update notification banner visibility
+        function updateNotificationBanner() {
+            const banner = document.getElementById('sound-banner');
+            const hasNotificationAPI = 'Notification' in window;
+            
+            if (hasNotificationAPI && Notification.permission === 'granted') {
+                // Notifications already granted, hide the banner
+                banner.classList.add('hidden');
+                notificationsEnabled = true;
+                soundEnabled = true;
+                // Initialize audio context (will need user interaction to resume if suspended)
+                initAudioContext();
+            } else if (hasNotificationAPI && Notification.permission === 'denied') {
+                // Notifications denied, hide the banner (user can't enable them anyway)
+                banner.classList.add('hidden');
+            }
+            // If permission is 'default', keep the banner visible
+        }
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadOnlineUsers();
             connectToStream();
+            updateNotificationBanner();
+            setupAudioUnlock();  // Setup audio unlock on user interactions
             
             // Refresh online users periodically
             setInterval(loadOnlineUsers, 30000);
@@ -1611,6 +2262,308 @@
                 eventSource.close();
             }
         });
+        
+        // ===== Scheduler Functions =====
+        
+        let schedulerTasks = [];
+        
+        // Load scheduled tasks
+        async function loadTasks() {
+            try {
+                const response = await fetch('{{ request.url_for("get_tasks") }}');
+                const data = await response.json();
+                
+                if (data.tasks) {
+                    schedulerTasks = data.tasks;
+                    renderTasks();
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+        
+        // Render tasks list
+        function renderTasks() {
+            const list = document.getElementById('tasks-list');
+            list.innerHTML = '';
+            
+            if (schedulerTasks.length === 0) {
+                list.innerHTML = '<div class="empty-tasks">' + translations.scheduler_no_tasks + '</div>';
+                return;
+            }
+            
+            schedulerTasks.forEach(task => {
+                const div = document.createElement('div');
+                div.className = 'task-item' + (task.enabled ? '' : ' disabled');
+                
+                const header = document.createElement('div');
+                header.className = 'task-header';
+                
+                const name = document.createElement('span');
+                name.className = 'task-name';
+                name.textContent = task.name;
+                header.appendChild(name);
+                
+                const badge = document.createElement('span');
+                badge.className = 'task-type-badge' + (task.type === 'broadcast' ? ' broadcast' : '');
+                // Get badge text based on task type
+                let badgeText = translations.scheduler_channel_message;
+                switch(task.type) {
+                    case 'broadcast': badgeText = translations.scheduler_broadcast; break;
+                    case 'channel_message': badgeText = translations.scheduler_channel_message; break;
+                    case 'pm_online': badgeText = translations.scheduler_pm_online; break;
+                    case 'pm_offline_queue': badgeText = translations.scheduler_pm_offline_queue; break;
+                    case 'on_user_login': badgeText = translations.scheduler_on_user_login; break;
+                }
+                badge.textContent = badgeText;
+                header.appendChild(badge);
+                
+                div.appendChild(header);
+                
+                const details = document.createElement('div');
+                details.className = 'task-details';
+                
+                let scheduleText = '';
+                const isEventTriggered = task.type === 'on_user_login';
+                if (isEventTriggered) {
+                    scheduleText = translations.scheduler_event_triggered;
+                    if (task.target_username) {
+                        scheduleText += ' (' + task.target_username + ')';
+                    }
+                } else if (task.recurring_minutes > 0) {
+                    scheduleText = translations.scheduler_every_minutes + ': ' + task.recurring_minutes;
+                } else if (task.next_run) {
+                    scheduleText = task.next_run.replace('T', ' ').substring(0, 16);
+                } else {
+                    scheduleText = translations.scheduler_one_time;
+                }
+                details.textContent = scheduleText + ' • ' + (task.enabled ? translations.scheduler_enabled : translations.scheduler_disabled);
+                div.appendChild(details);
+                
+                const actions = document.createElement('div');
+                actions.className = 'task-actions';
+                
+                // Don't show "Run Now" for event-triggered tasks
+                if (!isEventTriggered) {
+                    const runBtn = document.createElement('button');
+                    runBtn.className = 'task-btn run';
+                    runBtn.textContent = translations.scheduler_run_now;
+                    runBtn.onclick = () => runTask(task.id);
+                    actions.appendChild(runBtn);
+                }
+                
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'task-btn toggle';
+                toggleBtn.textContent = task.enabled ? translations.scheduler_disabled : translations.scheduler_enabled;
+                toggleBtn.onclick = () => toggleTask(task.id);
+                actions.appendChild(toggleBtn);
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'task-btn edit';
+                editBtn.textContent = translations.scheduler_edit;
+                editBtn.onclick = () => editTask(task);
+                actions.appendChild(editBtn);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'task-btn delete';
+                deleteBtn.textContent = translations.scheduler_delete;
+                deleteBtn.onclick = () => deleteTask(task.id);
+                actions.appendChild(deleteBtn);
+                
+                div.appendChild(actions);
+                list.appendChild(div);
+            });
+        }
+        
+        // Open add task modal
+        function openAddTaskModal() {
+            document.getElementById('task-modal-title').textContent = translations.scheduler_add_task;
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-name').value = '';
+            document.getElementById('task-type').value = 'broadcast';
+            document.getElementById('task-message').value = '';
+            document.getElementById('task-channel').value = '0';
+            document.getElementById('task-username').value = '';
+            document.getElementById('task-delay-min').value = '0';
+            document.getElementById('task-delay-max').value = '0';
+            document.getElementById('task-time').value = '';
+            document.getElementById('task-recurring').value = '0';
+            
+            onTaskTypeChange();
+            populateChannelSelect();
+            
+            document.getElementById('task-modal').classList.add('active');
+        }
+        
+        // Close task modal
+        function closeTaskModal() {
+            document.getElementById('task-modal').classList.remove('active');
+        }
+        
+        // Handle task type change
+        function onTaskTypeChange() {
+            const taskType = document.getElementById('task-type').value;
+            const channelGroup = document.getElementById('channel-select-group');
+            const usernameGroup = document.getElementById('username-group');
+            const delayGroup = document.getElementById('delay-group');
+            const timeGroup = document.getElementById('time-group');
+            const recurringGroup = document.getElementById('recurring-group');
+            
+            // Show/hide based on task type
+            channelGroup.style.display = taskType === 'channel_message' ? 'block' : 'none';
+            usernameGroup.style.display = ['pm_online', 'pm_offline_queue', 'on_user_login'].includes(taskType) ? 'block' : 'none';
+            delayGroup.style.display = taskType === 'on_user_login' ? 'block' : 'none';
+            
+            // Event-triggered tasks don't need scheduled time
+            const isEventTriggered = taskType === 'on_user_login';
+            timeGroup.style.display = isEventTriggered ? 'none' : 'block';
+            recurringGroup.style.display = isEventTriggered ? 'none' : 'block';
+        }
+        
+        // Populate channel select from loaded channels
+        function populateChannelSelect() {
+            const select = document.getElementById('task-channel');
+            select.innerHTML = '<option value="0">-- Select Channel --</option>';
+            
+            channels.forEach(ch => {
+                const option = document.createElement('option');
+                option.value = ch.id;
+                option.textContent = ch.name || ch.path || 'Channel ' + ch.id;
+                select.appendChild(option);
+            });
+        }
+        
+        // Edit task
+        function editTask(task) {
+            document.getElementById('task-modal-title').textContent = translations.scheduler_edit;
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-name').value = task.name || '';
+            document.getElementById('task-type').value = task.type || 'broadcast';
+            document.getElementById('task-message').value = task.message || '';
+            document.getElementById('task-channel').value = task.channel_id || '0';
+            document.getElementById('task-username').value = task.target_username || '';
+            document.getElementById('task-delay-min').value = task.delay_min_seconds || '0';
+            document.getElementById('task-delay-max').value = task.delay_max_seconds || '0';
+            
+            if (task.scheduled_time) {
+                const dt = new Date(task.scheduled_time);
+                document.getElementById('task-time').value = dt.toISOString().slice(0, 16);
+            } else {
+                document.getElementById('task-time').value = '';
+            }
+            
+            document.getElementById('task-recurring').value = task.recurring_minutes || '0';
+            
+            onTaskTypeChange();
+            populateChannelSelect();
+            document.getElementById('task-channel').value = task.channel_id || '0';
+            
+            document.getElementById('task-modal').classList.add('active');
+        }
+        
+        // Save task (create or update)
+        async function saveTask(event) {
+            event.preventDefault();
+            
+            const taskId = document.getElementById('task-id').value;
+            const formData = new FormData();
+            formData.append('task_type', document.getElementById('task-type').value);
+            formData.append('name', document.getElementById('task-name').value);
+            formData.append('message', document.getElementById('task-message').value);
+            formData.append('channel_id', document.getElementById('task-channel').value);
+            formData.append('scheduled_time', document.getElementById('task-time').value);
+            formData.append('recurring_minutes', document.getElementById('task-recurring').value);
+            formData.append('target_username', document.getElementById('task-username').value);
+            formData.append('delay_min_seconds', document.getElementById('task-delay-min').value);
+            formData.append('delay_max_seconds', document.getElementById('task-delay-max').value);
+            
+            try {
+                let response;
+                if (taskId) {
+                    response = await fetch('{{ request.url_for("update_task", task_id="__ID__") }}'.replace('__ID__', taskId), {
+                        method: 'PUT',
+                        body: formData
+                    });
+                } else {
+                    response = await fetch('{{ request.url_for("create_task") }}', {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(taskId ? translations.scheduler_task_updated : translations.scheduler_task_created, true);
+                    closeTaskModal();
+                    loadTasks();
+                } else {
+                    showToast(data.error || translations.scheduler_error, false);
+                }
+            } catch (error) {
+                showToast(translations.scheduler_error, false);
+            }
+        }
+        
+        // Run task immediately
+        async function runTask(taskId) {
+            try {
+                const response = await fetch('{{ request.url_for("run_task_now", task_id="__ID__") }}'.replace('__ID__', taskId), {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.scheduler_task_executed, true);
+                } else {
+                    showToast(data.error || translations.scheduler_error, false);
+                }
+            } catch (error) {
+                showToast(translations.scheduler_error, false);
+            }
+        }
+        
+        // Toggle task enabled/disabled
+        async function toggleTask(taskId) {
+            try {
+                const response = await fetch('{{ request.url_for("toggle_task", task_id="__ID__") }}'.replace('__ID__', taskId), {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadTasks();
+                } else {
+                    showToast(data.error || translations.scheduler_error, false);
+                }
+            } catch (error) {
+                showToast(translations.scheduler_error, false);
+            }
+        }
+        
+        // Delete task
+        async function deleteTask(taskId) {
+            if (!confirm(translations.scheduler_delete + '?')) return;
+            
+            try {
+                const response = await fetch('{{ request.url_for("delete_task", task_id="__ID__") }}'.replace('__ID__', taskId), {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.scheduler_task_deleted, true);
+                    loadTasks();
+                } else {
+                    showToast(data.error || translations.scheduler_error, false);
+                }
+            } catch (error) {
+                showToast(translations.scheduler_error, false);
+            }
+        }
     </script>
 </body>
 </html>

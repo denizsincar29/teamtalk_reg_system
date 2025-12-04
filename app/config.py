@@ -32,6 +32,9 @@ SERVER_CONFIG = {
     "password": os.environ.get("TEAMTALK_PASSWORD", ""),
 }
 
+# Bot nickname (defaults to username if not set)
+BOT_NICKNAME = os.environ.get("TEAMTALK_NICKNAME", SERVER_CONFIG["username"])
+
 # Bot connection configuration
 # When true, the bot connects to localhost instead of SERVER_CONFIG["host"]
 # Useful when running the web app on the same machine as the TeamTalk server
@@ -47,6 +50,7 @@ BOT_SERVER_CONFIG = {
     "udp_port": SERVER_CONFIG["udp_port"],
     "username": SERVER_CONFIG["username"],
     "password": SERVER_CONFIG["password"],
+    "nickname": BOT_NICKNAME,
     "join_channel_id": BOT_JOIN_CHANNEL_ID,
 }
 

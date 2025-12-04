@@ -14,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 
 from .i18n import DEFAULT_LANGUAGE, LANGUAGES, get_translations
 from .manager import tt_manager
+from .scheduler import task_scheduler, TaskType
 
 router = APIRouter(prefix="/admin")
 
@@ -28,8 +29,9 @@ templates = Jinja2Templates(directory=str(templates_dir))
 # Format: {session_token: {"username": str, "expires": datetime}}
 admin_sessions: dict[str, dict[str, Any]] = {}
 
-# Session expiry time
-SESSION_EXPIRY_HOURS = 8
+# Session expiry time - 30 days for PWA persistence
+SESSION_EXPIRY_DAYS = 30
+SESSION_EXPIRY_SECONDS = SESSION_EXPIRY_DAYS * 24 * 3600
 
 
 def get_lang(lang: str | None) -> str:
@@ -44,13 +46,16 @@ def create_session(username: str) -> str:
     token = secrets.token_urlsafe(32)
     admin_sessions[token] = {
         "username": username,
-        "expires": datetime.now() + timedelta(hours=SESSION_EXPIRY_HOURS)
+        "expires": datetime.now() + timedelta(days=SESSION_EXPIRY_DAYS)
     }
     return token
 
 
 def validate_session(token: str | None) -> str | None:
-    """Validate session token and return username if valid."""
+    """Validate session token and return username if valid.
+    
+    Also refreshes the session expiry time to extend the session.
+    """
     if not token:
         return None
     session = admin_sessions.get(token)
@@ -59,6 +64,8 @@ def validate_session(token: str | None) -> str | None:
     if datetime.now() > session["expires"]:
         del admin_sessions[token]
         return None
+    # Refresh the session expiry (sliding expiration)
+    session["expires"] = datetime.now() + timedelta(days=SESSION_EXPIRY_DAYS)
     return session["username"]
 
 
@@ -84,12 +91,21 @@ async def admin_home(request: Request, lang: str = Query(default=None)) -> HTMLR
     username = validate_session(token)
     
     if username:
-        return templates.TemplateResponse("admin_dashboard.html", {
+        response = templates.TemplateResponse("admin_dashboard.html", {
             "request": request,
             "lang": lang,
             "t": t,
             "username": html.escape(username)
         })
+        # Refresh the cookie to extend its expiry (sliding expiration)
+        response.set_cookie(
+            key="admin_session",
+            value=token,
+            httponly=True,
+            max_age=SESSION_EXPIRY_SECONDS,
+            samesite="lax"
+        )
+        return response
     
     return templates.TemplateResponse("admin_login.html", {
         "request": request,
@@ -151,7 +167,7 @@ async def admin_login(
         key="admin_session",
         value=token,
         httponly=True,
-        max_age=SESSION_EXPIRY_HOURS * 3600,
+        max_age=SESSION_EXPIRY_SECONDS,
         samesite="lax"
     )
     return response
@@ -278,6 +294,9 @@ async def message_and_event_generator(request: Request) -> AsyncGenerator[str, N
     last_messages: list[dict[str, Any]] = []
     last_event_count = 0
     last_events: list[dict[str, Any]] = []
+    # Track processed login events - only keep last 100 to prevent memory leak
+    processed_login_events: list[str] = []
+    MAX_PROCESSED_EVENTS = 100
     
     while True:
         # Check if client disconnected
@@ -286,6 +305,23 @@ async def message_and_event_generator(request: Request) -> AsyncGenerator[str, N
         
         messages = await tt_manager.get_channel_messages()
         events = await tt_manager.get_events()
+        
+        # Check for new user_login events and trigger scheduler
+        for evt in events:
+            if evt.get("type") == "user_login":
+                event_key = f"{evt.get('time')}_{evt.get('username')}"
+                if event_key not in processed_login_events:
+                    processed_login_events.append(event_key)
+                    # Keep only the last MAX_PROCESSED_EVENTS entries
+                    if len(processed_login_events) > MAX_PROCESSED_EVENTS:
+                        processed_login_events = processed_login_events[-MAX_PROCESSED_EVENTS:]
+                    # Trigger scheduler for this user login
+                    username = evt.get("username", "")
+                    user_id = evt.get("user_id", 0)
+                    if username and user_id:
+                        asyncio.create_task(
+                            task_scheduler.handle_user_login(username, user_id)
+                        )
         
         # Check for new messages or events
         msgs_changed = len(messages) != last_msg_count or messages != last_messages
@@ -406,6 +442,177 @@ async def leave_channel(request: Request) -> JSONResponse:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
     success, error = await tt_manager.leave_channel()
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
+# Scheduler routes
+
+@router.get("/api/tasks")
+async def get_tasks(request: Request) -> JSONResponse:
+    """Get all scheduled tasks."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    tasks = await task_scheduler.get_tasks()
+    return JSONResponse({"tasks": tasks})
+
+
+@router.post("/api/tasks")
+async def create_task(
+    request: Request,
+    task_type: str = Form(...),
+    name: str = Form(...),
+    message: str = Form(""),
+    channel_id: int = Form(0),
+    scheduled_time: str = Form(""),
+    recurring_minutes: int = Form(0),
+    target_username: str = Form(""),
+    delay_min_seconds: int = Form(0),
+    delay_max_seconds: int = Form(0)
+) -> JSONResponse:
+    """Create a new scheduled task."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    # Validate task type
+    valid_types = [
+        TaskType.BROADCAST, TaskType.CHANNEL_MESSAGE, TaskType.CREATE_CHANNEL,
+        TaskType.PM_ONLINE, TaskType.PM_OFFLINE_QUEUE, TaskType.ON_USER_LOGIN
+    ]
+    if task_type not in valid_types:
+        return JSONResponse({"error": "Invalid task type"}, status_code=400)
+    
+    # Parse scheduled time
+    parsed_time = None
+    if scheduled_time:
+        try:
+            parsed_time = datetime.fromisoformat(scheduled_time)
+        except ValueError:
+            return JSONResponse({"error": "Invalid scheduled time format"}, status_code=400)
+    
+    # For event-triggered tasks, time/recurring is not required
+    is_event_triggered = task_type in [TaskType.ON_USER_LOGIN]
+    
+    # At least one of scheduled_time or recurring_minutes must be set (unless event-triggered)
+    if not is_event_triggered and not parsed_time and recurring_minutes <= 0:
+        return JSONResponse({"error": "Must specify either scheduled time or recurring interval"}, status_code=400)
+    
+    task_id = await task_scheduler.add_task(
+        task_type=task_type,
+        name=name,
+        message=message,
+        channel_id=channel_id,
+        scheduled_time=parsed_time,
+        recurring_minutes=recurring_minutes,
+        target_username=target_username,
+        delay_min_seconds=delay_min_seconds,
+        delay_max_seconds=delay_max_seconds
+    )
+    
+    return JSONResponse({"success": True, "task_id": task_id})
+
+
+@router.put("/api/tasks/{task_id}")
+async def update_task(
+    request: Request,
+    task_id: str,
+    name: str = Form(None),
+    message: str = Form(None),
+    channel_id: int = Form(None),
+    scheduled_time: str = Form(None),
+    recurring_minutes: int = Form(None),
+    enabled: bool = Form(None),
+    target_username: str = Form(None),
+    delay_min_seconds: int = Form(None),
+    delay_max_seconds: int = Form(None)
+) -> JSONResponse:
+    """Update an existing task."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    updates = {}
+    if name is not None:
+        updates["name"] = name
+    if message is not None:
+        updates["message"] = message
+    if channel_id is not None:
+        updates["channel_id"] = channel_id
+    if scheduled_time is not None:
+        if scheduled_time:
+            try:
+                updates["scheduled_time"] = datetime.fromisoformat(scheduled_time)
+            except ValueError:
+                return JSONResponse({"error": "Invalid scheduled time format"}, status_code=400)
+        else:
+            updates["scheduled_time"] = None
+    if recurring_minutes is not None:
+        updates["recurring_minutes"] = recurring_minutes
+    if enabled is not None:
+        updates["enabled"] = enabled
+    if target_username is not None:
+        updates["target_username"] = target_username
+    if delay_min_seconds is not None:
+        updates["delay_min_seconds"] = delay_min_seconds
+    if delay_max_seconds is not None:
+        updates["delay_max_seconds"] = delay_max_seconds
+    
+    success = await task_scheduler.update_task(task_id, **updates)
+    
+    if not success:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    
+    return JSONResponse({"success": True})
+
+
+@router.delete("/api/tasks/{task_id}")
+async def delete_task(request: Request, task_id: str) -> JSONResponse:
+    """Delete a scheduled task."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success = await task_scheduler.delete_task(task_id)
+    
+    if not success:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/tasks/{task_id}/toggle")
+async def toggle_task(request: Request, task_id: str) -> JSONResponse:
+    """Toggle a task's enabled state."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success = await task_scheduler.toggle_task(task_id)
+    
+    if not success:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/tasks/{task_id}/run")
+async def run_task_now(request: Request, task_id: str) -> JSONResponse:
+    """Run a task immediately."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    task = await task_scheduler.get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    
+    success, error = await task_scheduler.execute_task(task)
     
     if not success:
         return JSONResponse({"error": str(error)}, status_code=500)
