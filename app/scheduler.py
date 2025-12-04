@@ -34,8 +34,8 @@ class TaskType:
     CHANNEL_MESSAGE = "channel_message"
     CREATE_CHANNEL = "create_channel"
     PM_ONLINE = "pm_online"  # Send PM only if user is online
-    PM_OFFLINE_QUEUE = "pm_offline_queue"  # Queue PM for offline user
     ON_USER_LOGIN = "on_user_login"  # Trigger on user login (0-X seconds delay)
+    STATUS_CHANGE = "status_change"  # Change bot status message
 
 
 class TaskScheduler:
@@ -117,23 +117,25 @@ class TaskScheduler:
         enabled: bool = True,
         target_username: str = "",
         delay_min_seconds: int = 0,
-        delay_max_seconds: int = 0
+        delay_max_seconds: int = 0,
+        status_mode: int = 0
     ) -> str:
         """Add a new scheduled task.
         
         Args:
-            task_type: Type of task (broadcast, channel_message, create_channel, pm_online, pm_offline_queue, on_user_login)
+            task_type: Type of task (broadcast, channel_message, create_channel, pm_online, on_user_login, status_change)
             name: Display name for the task
-            message: Message content (for broadcast/channel_message/pm)
+            message: Message content (for broadcast/channel_message/pm/status)
             channel_id: Target channel ID (for channel_message)
             channel_name: Channel name (for create_channel)
             channel_password: Channel password (for create_channel)
             scheduled_time: When to execute (None for recurring-only tasks or event-based)
             recurring_minutes: Repeat every N minutes (0 for one-time)
             enabled: Whether the task is active
-            target_username: Target username (for pm_online, pm_offline_queue, on_user_login)
+            target_username: Target username (for pm_online, on_user_login)
             delay_min_seconds: Minimum delay in seconds (for on_user_login)
             delay_max_seconds: Maximum delay in seconds (for on_user_login)
+            status_mode: Status mode for status_change (0=online, 1=away, 2=question)
             
         Returns:
             Task ID
@@ -152,6 +154,7 @@ class TaskScheduler:
             "target_username": target_username,
             "delay_min_seconds": delay_min_seconds,
             "delay_max_seconds": delay_max_seconds,
+            "status_mode": status_mode,
             "recurring_minutes": recurring_minutes,
             "enabled": enabled,
             "created_at": datetime.now().isoformat(),
@@ -305,35 +308,13 @@ class TaskScheduler:
                 success, error = await self._manager.send_private_message(user_id, message)
                 return success, error
             
-            elif task_type == TaskType.PM_OFFLINE_QUEUE:
-                # Queue PM for offline user, deliver when they come online
-                target_username = task.get("target_username", "")
-                message = task.get("message", "")
+            elif task_type == TaskType.STATUS_CHANGE:
+                # Change bot status message
+                status_mode = task.get("status_mode", 0)
+                status_message = task.get("message", "")
                 
-                if not target_username:
-                    return False, "No target username specified"
-                if not message:
-                    return False, "No message specified"
-                
-                # Check if user is online
-                users, error = await self._manager.get_online_users()
-                if error:
-                    return False, f"Failed to get online users: {error}"
-                
-                user_id = None
-                for user in users:
-                    if user.get("username", "").lower() == target_username.lower():
-                        user_id = user.get("id")
-                        break
-                
-                if user_id is not None:
-                    # User is online, send directly
-                    success, error = await self._manager.send_private_message(user_id, message)
-                    return success, error
-                else:
-                    # User is offline, queue the message
-                    await self.queue_offline_pm(target_username, message, task.get("name", ""))
-                    return True, f"Queued PM for offline user {target_username}"
+                success, error = await self._manager.change_status(status_mode, status_message)
+                return success, error
             
             return False, f"Unknown task type: {task_type}"
             

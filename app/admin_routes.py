@@ -473,7 +473,8 @@ async def create_task(
     recurring_minutes: int = Form(0),
     target_username: str = Form(""),
     delay_min_seconds: int = Form(0),
-    delay_max_seconds: int = Form(0)
+    delay_max_seconds: int = Form(0),
+    status_mode: int = Form(0)
 ) -> JSONResponse:
     """Create a new scheduled task."""
     token = get_session_token(request)
@@ -483,7 +484,7 @@ async def create_task(
     # Validate task type
     valid_types = [
         TaskType.BROADCAST, TaskType.CHANNEL_MESSAGE, TaskType.CREATE_CHANNEL,
-        TaskType.PM_ONLINE, TaskType.PM_OFFLINE_QUEUE, TaskType.ON_USER_LOGIN
+        TaskType.PM_ONLINE, TaskType.ON_USER_LOGIN, TaskType.STATUS_CHANGE
     ]
     if task_type not in valid_types:
         return JSONResponse({"error": "Invalid task type"}, status_code=400)
@@ -512,7 +513,8 @@ async def create_task(
         recurring_minutes=recurring_minutes,
         target_username=target_username,
         delay_min_seconds=delay_min_seconds,
-        delay_max_seconds=delay_max_seconds
+        delay_max_seconds=delay_max_seconds,
+        status_mode=status_mode
     )
     
     return JSONResponse({"success": True, "task_id": task_id})
@@ -530,7 +532,8 @@ async def update_task(
     enabled: bool = Form(None),
     target_username: str = Form(None),
     delay_min_seconds: int = Form(None),
-    delay_max_seconds: int = Form(None)
+    delay_max_seconds: int = Form(None),
+    status_mode: int = Form(None)
 ) -> JSONResponse:
     """Update an existing task."""
     token = get_session_token(request)
@@ -562,6 +565,8 @@ async def update_task(
         updates["delay_min_seconds"] = delay_min_seconds
     if delay_max_seconds is not None:
         updates["delay_max_seconds"] = delay_max_seconds
+    if status_mode is not None:
+        updates["status_mode"] = status_mode
     
     success = await task_scheduler.update_task(task_id, **updates)
     
@@ -676,3 +681,62 @@ async def ban_username(
         return JSONResponse({"error": str(error)}, status_code=500)
     
     return JSONResponse({"success": True})
+
+
+@router.get("/api/status", name="get_bot_status")
+async def get_bot_status(request: Request) -> JSONResponse:
+    """Get the bot's current status mode and message."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    status_mode, status_message, error = await tt_manager.get_status()
+    
+    if error:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"status_mode": status_mode, "status_message": status_message})
+
+
+@router.post("/api/status", name="set_bot_status")
+async def set_bot_status(
+    request: Request,
+    status_mode: int = Form(0),
+    status_message: str = Form("")
+) -> JSONResponse:
+    """Set the bot's status mode and message."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success, error = await tt_manager.change_status(status_mode, status_message)
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/queue_offline_pm", name="queue_offline_pm")
+async def queue_offline_pm(
+    request: Request,
+    username: str = Form(...),
+    message: str = Form(...)
+) -> JSONResponse:
+    """Queue a private message for an offline user."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    username = username.strip()
+    message = message.strip()
+    
+    if not username or not message:
+        return JSONResponse({"error": "Username and message are required"}, status_code=400)
+    
+    success, error = await tt_manager.queue_offline_pm(username, message)
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True, "queued": True})

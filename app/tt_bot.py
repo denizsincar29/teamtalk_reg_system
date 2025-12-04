@@ -427,6 +427,45 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             worker_logger.error(f"Failed to ban username {username}: {e}", exc_info=True)
                             response_queue.put({"success": False, "error": str(e)})
                     
+                    elif action == "change_status":
+                        status_mode = request.get("status_mode", 0)  # 0 = online
+                        status_message = request.get("status_message", "")
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            # Use pytalk Status enum for proper status flags
+                            # status_mode: 0=online, 1=away, 2=question
+                            from pytalk.enums import Status
+                            if status_mode == 1:
+                                status_flags = Status.away.neutral
+                            elif status_mode == 2:
+                                status_flags = Status.question.neutral
+                            else:
+                                status_flags = Status.online.neutral
+                            instance.change_status(status_flags, status_message)
+                            worker_logger.info(f"Changed status to mode={status_mode}, message='{status_message}'")
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            worker_logger.error(f"Failed to change status: {e}", exc_info=True)
+                            response_queue.put({"success": False, "error": str(e)})
+                    
+                    elif action == "get_status":
+                        try:
+                            if instance is None:
+                                response_queue.put({"status_mode": 0, "status_message": "", "error": "Not connected"})
+                                continue
+                            user_id = instance.getMyUserID()
+                            user = instance.get_user(user_id)
+                            status_mode = getattr(user, 'status_mode', 0) if user else 0
+                            status_message = str(getattr(user, 'status_msg', '')) if user else ""
+                            # Extract mode bits (0=online, 1=away, 2=question)
+                            mode_bits = status_mode & 0xFF  # Lower 8 bits for mode
+                            response_queue.put({"status_mode": mode_bits, "status_message": status_message})
+                        except Exception as e:
+                            worker_logger.error(f"Failed to get status: {e}", exc_info=True)
+                            response_queue.put({"status_mode": 0, "status_message": "", "error": str(e)})
+                    
                     elif action == "shutdown":
                         worker_logger.info("Shutting down bot worker")
                         break
