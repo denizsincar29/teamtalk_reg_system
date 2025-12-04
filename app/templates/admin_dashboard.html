@@ -656,6 +656,7 @@
             pm_sent_error: "{{ t.pm_sent_error }}",
             channel_msg_success: "{{ t.messages_reply_success }}",
             channel_msg_error: "{{ t.messages_reply_error }}",
+            messages_sent_as_broadcast: "{{ t.messages_sent_as_broadcast }}",
             messages_private: "{{ t.messages_private }}",
             messages_broadcast: "{{ t.messages_broadcast }}",
             sound_enabled: "{{ t.messages_sound_enabled }}",
@@ -878,10 +879,10 @@
             if (announcer) {
                 // Clear first to ensure the change is detected
                 announcer.textContent = '';
-                // Set the new message after a brief delay
+                // Set the new message after a brief delay (100ms for better compatibility)
                 setTimeout(() => {
                     announcer.textContent = message;
-                }, 50);
+                }, 100);
             }
         }
         
@@ -1388,7 +1389,7 @@
                         const broadcastData = await response.json();
                         if (broadcastData.success) {
                             input.value = '';
-                            showToast(translations.channel_msg_success + ' (broadcast)', true);
+                            showToast(translations.messages_sent_as_broadcast, true);
                         } else {
                             showToast(broadcastData.error || translations.channel_msg_error, false);
                         }
@@ -1453,10 +1454,10 @@
                             newMessages.forEach(msg => {
                                 if (msg.type === 'private') {
                                     playPrivateNotification();
-                                    announceToScreenReader(translations.messages_private + ': ' + msg.from_user + ': ' + msg.content);
+                                    announceToScreenReader(translations.messages_private + ' ' + msg.from_user + ' ' + msg.content);
                                 } else {
                                     playChannelNotification();
-                                    announceToScreenReader(msg.from_user + ': ' + msg.content);
+                                    announceToScreenReader(msg.from_user + ' ' + msg.content);
                                 }
                             });
                         }

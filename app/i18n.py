@@ -111,6 +111,7 @@ TRANSLATIONS = {
         "messages_reply_error": "Failed to send message.",
         "messages_private": "Private",
         "messages_broadcast": "Broadcast",
+        "messages_sent_as_broadcast": "Message sent! (broadcast)",
         "messages_enable_sound": "🔔 Click to enable notification sounds",
         "messages_sound_enabled": "Notification sounds enabled",
         
@@ -245,6 +246,7 @@ TRANSLATIONS = {
         "messages_reply_error": "Не удалось отправить сообщение.",
         "messages_private": "Личное",
         "messages_broadcast": "Рассылка",
+        "messages_sent_as_broadcast": "Сообщение отправлено! (рассылка)",
         "messages_enable_sound": "🔔 Нажмите для включения звуковых уведомлений",
         "messages_sound_enabled": "Звуковые уведомления включены",
         
