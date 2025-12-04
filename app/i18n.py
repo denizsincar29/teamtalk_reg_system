@@ -104,6 +104,11 @@ TRANSLATIONS = {
         "messages_time": "Time",
         "messages_empty": "No messages yet.",
         "messages_clear": "Clear Messages",
+        "messages_reply": "Reply to Channel",
+        "messages_reply_placeholder": "Type your message...",
+        "messages_reply_send": "Send",
+        "messages_reply_success": "Message sent to channel!",
+        "messages_reply_error": "Failed to send message.",
         
         # Navigation
         "admin_back_to_registration": "← Back to Registration",
@@ -206,6 +211,11 @@ TRANSLATIONS = {
         "messages_time": "Время",
         "messages_empty": "Пока нет сообщений.",
         "messages_clear": "Очистить сообщения",
+        "messages_reply": "Ответить в канал",
+        "messages_reply_placeholder": "Введите сообщение...",
+        "messages_reply_send": "Отправить",
+        "messages_reply_success": "Сообщение отправлено в канал!",
+        "messages_reply_error": "Не удалось отправить сообщение.",
         
         # Navigation
         "admin_back_to_registration": "← Вернуться к регистрации",

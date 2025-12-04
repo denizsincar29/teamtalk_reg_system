@@ -335,6 +335,16 @@
                 </table>
             </div>
             <div id="messages-empty" class="empty-message">{{ t.messages_empty }}</div>
+            
+            <!-- Channel message reply form -->
+            <div class="reply-form" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+                <h3 style="margin-bottom: 10px;">{{ t.messages_reply }}</h3>
+                <form id="channel-reply-form" onsubmit="sendChannelMessage(event)" style="display: flex; gap: 10px;">
+                    <input type="text" id="channel-message" placeholder="{{ t.messages_reply_placeholder }}" required 
+                           style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <button type="submit" class="action-btn" style="padding: 10px 20px;">{{ t.messages_reply_send }}</button>
+                </form>
+            </div>
         </div>
         
         <div class="back-link">
@@ -371,7 +381,9 @@
             accounts_type_admin: "{{ t.accounts_type_admin }}",
             online_send_message: "{{ t.online_send_message }}",
             pm_sent_success: "{{ t.pm_sent_success }}",
-            pm_sent_error: "{{ t.pm_sent_error }}"
+            pm_sent_error: "{{ t.pm_sent_error }}",
+            channel_msg_success: "{{ t.messages_reply_success }}",
+            channel_msg_error: "{{ t.messages_reply_error }}"
         };
         
         function showTab(tabName) {
@@ -631,6 +643,34 @@
                 }
             } catch (error) {
                 showToast(translations.pm_sent_error, false);
+            }
+        }
+        
+        async function sendChannelMessage(event) {
+            event.preventDefault();
+            
+            const message = document.getElementById('channel-message').value;
+            
+            try {
+                const formData = new FormData();
+                formData.append('message', message);
+                
+                const response = await fetch('{{ request.url_for("send_channel_message") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('channel-message').value = '';
+                    showToast(translations.channel_msg_success, true);
+                    // Reload messages after sending
+                    loadMessages();
+                } else {
+                    showToast(data.error || translations.channel_msg_error, false);
+                }
+            } catch (error) {
+                showToast(translations.channel_msg_error, false);
             }
         }
         

@@ -224,6 +224,28 @@ async def send_private_message(
     return JSONResponse({"success": True})
 
 
+@router.post("/api/send_channel_message")
+async def send_channel_message(
+    request: Request,
+    message: str = Form(...)
+) -> JSONResponse:
+    """Send a message to the channel the bot is in."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    message = message.strip()
+    if not message:
+        return JSONResponse({"error": "Message cannot be empty"}, status_code=400)
+    
+    success, error = await tt_manager.send_channel_message(message)
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
 @router.get("/api/messages")
 async def get_channel_messages(request: Request) -> JSONResponse:
     """Get channel messages."""

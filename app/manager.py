@@ -221,6 +221,34 @@ class TeamTalkManager:
             
             return False, "Timeout waiting for response"
     
+    async def send_channel_message(self, message: str) -> tuple[bool, str | None]:
+        """Send a message to the channel the bot is currently in.
+        
+        Args:
+            message: The message to send.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "send_channel_message",
+                "message": message
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
     async def get_channel_messages(self) -> list[dict[str, Any]]:
         """Get channel messages collected by the bot.
         

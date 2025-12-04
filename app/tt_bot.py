@@ -223,6 +223,29 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                         except Exception as e:
                             response_queue.put({"success": False, "error": str(e)})
                     
+                    elif action == "send_channel_message":
+                        message = request.get("message")
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            # Get the current channel the bot is in
+                            channel_id = instance.getMyChannelID()
+                            if channel_id == 0:
+                                response_queue.put({"success": False, "error": "Bot is not in a channel"})
+                                continue
+                            channel = instance.get_channel(channel_id)
+                            if channel is None:
+                                response_queue.put({"success": False, "error": "Channel not found"})
+                                continue
+                            # send_message is an async coroutine
+                            result = channel.send_message(message)
+                            if result is not None:
+                                await result
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            response_queue.put({"success": False, "error": str(e)})
+                    
                     elif action == "get_channel_messages":
                         response_queue.put({"messages": list(channel_messages)})
                     
