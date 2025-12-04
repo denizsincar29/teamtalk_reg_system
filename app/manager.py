@@ -447,6 +447,90 @@ class TeamTalkManager:
                     self.response_queue.get_nowait()
                     return
     
+    async def kick_user(self, user_id: int) -> tuple[bool, str | None]:
+        """Kick a user from the server.
+        
+        Args:
+            user_id: The ID of the user to kick.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "kick_user",
+                "user_id": user_id
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def ban_user(self, user_id: int) -> tuple[bool, str | None]:
+        """Ban a user from the server (online user).
+        
+        Args:
+            user_id: The ID of the user to ban.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "ban_user",
+                "user_id": user_id
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def ban_username(self, username: str) -> tuple[bool, str | None]:
+        """Ban a user account by username (for offline users).
+        
+        Args:
+            username: The username to ban.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "ban_username",
+                "username": username
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
     def stop(self) -> None:
         """Stop the TeamTalk worker process."""
         if self.request_queue is not None:

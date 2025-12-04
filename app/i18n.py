@@ -178,6 +178,21 @@ TRANSLATIONS = {
         "scheduler_task_executed": "Task executed successfully",
         "scheduler_error": "Scheduler error",
         
+        # User actions (kick/ban)
+        "kick_user": "Kick",
+        "ban_user": "Ban",
+        "kick_user_success": "User kicked successfully",
+        "kick_user_error": "Failed to kick user",
+        "ban_user_success": "User banned successfully",
+        "ban_user_error": "Failed to ban user",
+        "confirm_kick": "Are you sure you want to kick this user?",
+        "confirm_ban": "Are you sure you want to ban this user?",
+        
+        # Main tabs
+        "tab_users": "Users",
+        "tab_chat": "Chat",
+        "tab_server": "Server",
+        
         # Navigation
         "admin_back_to_registration": "← Back to Registration",
     },
@@ -352,6 +367,21 @@ TRANSLATIONS = {
         "scheduler_task_deleted": "Задача успешно удалена",
         "scheduler_task_executed": "Задача успешно выполнена",
         "scheduler_error": "Ошибка планировщика",
+        
+        # User actions (kick/ban)
+        "kick_user": "Кикнуть",
+        "ban_user": "Забанить",
+        "kick_user_success": "Пользователь кикнут",
+        "kick_user_error": "Не удалось кикнуть пользователя",
+        "ban_user_success": "Пользователь забанен",
+        "ban_user_error": "Не удалось забанить пользователя",
+        "confirm_kick": "Вы уверены, что хотите кикнуть этого пользователя?",
+        "confirm_ban": "Вы уверены, что хотите забанить этого пользователя?",
+        
+        # Main tabs
+        "tab_users": "Пользователи",
+        "tab_chat": "Чат",
+        "tab_server": "Сервер",
         
         # Navigation
         "admin_back_to_registration": "← Вернуться к регистрации",

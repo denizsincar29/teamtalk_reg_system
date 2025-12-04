@@ -618,3 +618,61 @@ async def run_task_now(request: Request, task_id: str) -> JSONResponse:
         return JSONResponse({"error": str(error)}, status_code=500)
     
     return JSONResponse({"success": True})
+
+
+@router.post("/api/kick")
+async def kick_user(
+    request: Request,
+    user_id: int = Form(...)
+) -> JSONResponse:
+    """Kick a user from the server."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success, error = await tt_manager.kick_user(user_id)
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/ban")
+async def ban_user(
+    request: Request,
+    user_id: int = Form(...)
+) -> JSONResponse:
+    """Ban a user from the server (online user by ID)."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success, error = await tt_manager.ban_user(user_id)
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/ban_username")
+async def ban_username(
+    request: Request,
+    username: str = Form(...)
+) -> JSONResponse:
+    """Ban a user account by username (for offline users)."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    username = username.strip()
+    if not username:
+        return JSONResponse({"error": "Username cannot be empty"}, status_code=400)
+    
+    success, error = await tt_manager.ban_username(username)
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})

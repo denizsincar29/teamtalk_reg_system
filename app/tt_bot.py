@@ -1,6 +1,8 @@
 """TeamTalk bot worker that runs in a separate process."""
 
 import asyncio
+import logging
+import sys
 from collections import deque
 from datetime import datetime
 from multiprocessing import Queue
@@ -12,6 +14,16 @@ from pytalk import channel as tt_channel
 from pytalk import user as tt_user
 
 from .config import BOT_SERVER_CONFIG
+
+# Set up logging for the worker process
+# Note: This runs in a separate process, so we set up logging here directly
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+worker_logger = logging.getLogger("teamtalk.bot_worker")
 
 # Default user rights for newly registered users
 # This gives users standard capabilities: voice, messaging, file transfers, etc.
@@ -372,10 +384,50 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                         events.clear()
                         response_queue.put({"success": True})
                     
+                    elif action == "kick_user":
+                        user_id = request.get("user_id")
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            # Kick the user from the server
+                            instance.kick_user(user_id, 0)  # 0 = from server
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            response_queue.put({"success": False, "error": str(e)})
+                    
+                    elif action == "ban_user":
+                        user_id = request.get("user_id")
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            # Ban the user from the server
+                            instance.ban_user(user_id)
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            response_queue.put({"success": False, "error": str(e)})
+                    
+                    elif action == "ban_username":
+                        username = request.get("username")
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            # Ban a username (for offline users)
+                            # First we need to create a ban entry
+                            # Find the user's IP if they were ever online, or use a username-based ban
+                            # For now we'll use the username-based ban (ban_user_account)
+                            instance.ban_user_account(username)
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            worker_logger.error(f"Failed to ban username {username}: {e}")
+                            response_queue.put({"success": False, "error": str(e)})
+                    
                     elif action == "shutdown":
                         break
-            except Exception:
-                pass
+            except Exception as e:
+                worker_logger.error(f"Error processing request: {e}", exc_info=True)
 
     @bot.event
     async def on_ready() -> None:
