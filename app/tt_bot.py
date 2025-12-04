@@ -415,16 +415,20 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                 response_queue.put({"success": False, "error": "Not connected"})
                                 continue
                             # Ban a username (for offline users)
-                            # First we need to create a ban entry
-                            # Find the user's IP if they were ever online, or use a username-based ban
-                            # For now we'll use the username-based ban (ban_user_account)
+                            # Check if the method exists before calling
+                            if not hasattr(instance, 'ban_user_account'):
+                                worker_logger.error("ban_user_account method not available in TeamTalk SDK")
+                                response_queue.put({"success": False, "error": "Ban by username not supported by TeamTalk SDK"})
+                                continue
                             instance.ban_user_account(username)
+                            worker_logger.info(f"Banned user account: {username}")
                             response_queue.put({"success": True})
                         except Exception as e:
-                            worker_logger.error(f"Failed to ban username {username}: {e}")
+                            worker_logger.error(f"Failed to ban username {username}: {e}", exc_info=True)
                             response_queue.put({"success": False, "error": str(e)})
                     
                     elif action == "shutdown":
+                        worker_logger.info("Shutting down bot worker")
                         break
             except Exception as e:
                 worker_logger.error(f"Error processing request: {e}", exc_info=True)

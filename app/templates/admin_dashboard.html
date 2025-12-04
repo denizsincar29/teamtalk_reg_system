@@ -1049,12 +1049,6 @@
         </div>
     </div>
     
-    <!-- Hidden old layout for compatibility (elements still referenced by JS) -->
-    <div class="main-layout" style="display: none !important;">
-        <div class="sidebar"></div>
-        <div class="chat-container"></div>
-    </div>
-    
     <!-- Toast notification -->
     <div id="toast" class="toast"></div>
     
@@ -2071,14 +2065,14 @@
                         
                         const nameSpan = document.createElement('div');
                         nameSpan.className = 'user-name';
-                        nameSpan.textContent = account.username;
+                        nameSpan.textContent = account.username + ' ';
                         
                         const typeSpan = document.createElement('span');
                         typeSpan.className = 'account-type ' + (account.user_type === 'admin' ? 'admin' : 'user');
                         typeSpan.textContent = account.user_type === 'admin' ? 'Admin' : 'User';
-                        nameSpan.appendChild(typeSpan);
                         
                         infoDiv.appendChild(nameSpan);
+                        infoDiv.appendChild(typeSpan);
                         li.appendChild(infoDiv);
                         
                         // Action buttons
