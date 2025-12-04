@@ -943,8 +943,11 @@
         // Format event message for display and screenreader
         function formatEventMessage(event) {
             const nickname = event.nickname || event.username || 'Unknown';
-            // Use "root" translation if channel is empty (root channel)
-            const channel = event.channel || translations.event_root_channel;
+            // Use "root" translation if channel is empty, whitespace-only, or "/"
+            const rawChannel = event.channel || '';
+            const channel = (rawChannel.trim() === '' || rawChannel === '/') 
+                ? translations.event_root_channel 
+                : rawChannel;
             
             switch (event.type) {
                 case 'user_login':

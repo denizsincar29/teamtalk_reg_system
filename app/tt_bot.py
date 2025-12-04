@@ -419,6 +419,9 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
             username = str(user.username) if hasattr(user, 'username') else ""
             nickname = str(user.nickname) if hasattr(user, 'nickname') else username
             channel_name = str(channel.name) if hasattr(channel, 'name') else ""
+            # Root channel may have empty name, "/" or other indicators
+            if not channel_name or channel_name == "/" or channel_name.strip() == "":
+                channel_name = ""  # Will be replaced with "root" in frontend
             events.append({
                 "type": "user_join_channel",
                 "username": username,
@@ -436,6 +439,9 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
             username = str(user.username) if hasattr(user, 'username') else ""
             nickname = str(user.nickname) if hasattr(user, 'nickname') else username
             channel_name = str(channel.name) if hasattr(channel, 'name') else ""
+            # Root channel may have empty name, "/" or other indicators
+            if not channel_name or channel_name == "/" or channel_name.strip() == "":
+                channel_name = ""  # Will be replaced with "root" in frontend
             events.append({
                 "type": "user_left_channel",
                 "username": username,
