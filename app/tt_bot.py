@@ -412,10 +412,12 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
         try:
             username = str(user.username) if hasattr(user, 'username') else ""
             nickname = str(user.nickname) if hasattr(user, 'nickname') else username
+            user_id = user.id if hasattr(user, 'id') else 0
             events.append({
                 "type": "user_login",
                 "username": username,
                 "nickname": nickname,
+                "user_id": user_id,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
         except Exception:

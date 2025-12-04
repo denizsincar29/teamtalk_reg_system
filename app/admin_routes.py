@@ -294,6 +294,9 @@ async def message_and_event_generator(request: Request) -> AsyncGenerator[str, N
     last_messages: list[dict[str, Any]] = []
     last_event_count = 0
     last_events: list[dict[str, Any]] = []
+    # Track processed login events - only keep last 100 to prevent memory leak
+    processed_login_events: list[str] = []
+    MAX_PROCESSED_EVENTS = 100
     
     while True:
         # Check if client disconnected
@@ -302,6 +305,23 @@ async def message_and_event_generator(request: Request) -> AsyncGenerator[str, N
         
         messages = await tt_manager.get_channel_messages()
         events = await tt_manager.get_events()
+        
+        # Check for new user_login events and trigger scheduler
+        for evt in events:
+            if evt.get("type") == "user_login":
+                event_key = f"{evt.get('time')}_{evt.get('username')}"
+                if event_key not in processed_login_events:
+                    processed_login_events.append(event_key)
+                    # Keep only the last MAX_PROCESSED_EVENTS entries
+                    if len(processed_login_events) > MAX_PROCESSED_EVENTS:
+                        processed_login_events = processed_login_events[-MAX_PROCESSED_EVENTS:]
+                    # Trigger scheduler for this user login
+                    username = evt.get("username", "")
+                    user_id = evt.get("user_id", 0)
+                    if username and user_id:
+                        asyncio.create_task(
+                            task_scheduler.handle_user_login(username, user_id)
+                        )
         
         # Check for new messages or events
         msgs_changed = len(messages) != last_msg_count or messages != last_messages
@@ -450,7 +470,10 @@ async def create_task(
     message: str = Form(""),
     channel_id: int = Form(0),
     scheduled_time: str = Form(""),
-    recurring_minutes: int = Form(0)
+    recurring_minutes: int = Form(0),
+    target_username: str = Form(""),
+    delay_min_seconds: int = Form(0),
+    delay_max_seconds: int = Form(0)
 ) -> JSONResponse:
     """Create a new scheduled task."""
     token = get_session_token(request)
@@ -458,7 +481,11 @@ async def create_task(
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
     # Validate task type
-    if task_type not in [TaskType.BROADCAST, TaskType.CHANNEL_MESSAGE, TaskType.CREATE_CHANNEL]:
+    valid_types = [
+        TaskType.BROADCAST, TaskType.CHANNEL_MESSAGE, TaskType.CREATE_CHANNEL,
+        TaskType.PM_ONLINE, TaskType.PM_OFFLINE_QUEUE, TaskType.ON_USER_LOGIN
+    ]
+    if task_type not in valid_types:
         return JSONResponse({"error": "Invalid task type"}, status_code=400)
     
     # Parse scheduled time
@@ -469,8 +496,11 @@ async def create_task(
         except ValueError:
             return JSONResponse({"error": "Invalid scheduled time format"}, status_code=400)
     
-    # At least one of scheduled_time or recurring_minutes must be set
-    if not parsed_time and recurring_minutes <= 0:
+    # For event-triggered tasks, time/recurring is not required
+    is_event_triggered = task_type in [TaskType.ON_USER_LOGIN]
+    
+    # At least one of scheduled_time or recurring_minutes must be set (unless event-triggered)
+    if not is_event_triggered and not parsed_time and recurring_minutes <= 0:
         return JSONResponse({"error": "Must specify either scheduled time or recurring interval"}, status_code=400)
     
     task_id = await task_scheduler.add_task(
@@ -479,7 +509,10 @@ async def create_task(
         message=message,
         channel_id=channel_id,
         scheduled_time=parsed_time,
-        recurring_minutes=recurring_minutes
+        recurring_minutes=recurring_minutes,
+        target_username=target_username,
+        delay_min_seconds=delay_min_seconds,
+        delay_max_seconds=delay_max_seconds
     )
     
     return JSONResponse({"success": True, "task_id": task_id})
@@ -494,7 +527,10 @@ async def update_task(
     channel_id: int = Form(None),
     scheduled_time: str = Form(None),
     recurring_minutes: int = Form(None),
-    enabled: bool = Form(None)
+    enabled: bool = Form(None),
+    target_username: str = Form(None),
+    delay_min_seconds: int = Form(None),
+    delay_max_seconds: int = Form(None)
 ) -> JSONResponse:
     """Update an existing task."""
     token = get_session_token(request)
@@ -520,6 +556,12 @@ async def update_task(
         updates["recurring_minutes"] = recurring_minutes
     if enabled is not None:
         updates["enabled"] = enabled
+    if target_username is not None:
+        updates["target_username"] = target_username
+    if delay_min_seconds is not None:
+        updates["delay_min_seconds"] = delay_min_seconds
+    if delay_max_seconds is not None:
+        updates["delay_max_seconds"] = delay_max_seconds
     
     success = await task_scheduler.update_task(task_id, **updates)
     
