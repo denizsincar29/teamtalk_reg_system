@@ -273,26 +273,36 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
 
     @bot.event
     async def on_message(msg: tt_message.Message) -> None:
-        """Handle incoming messages and store channel messages."""
-        # Only store channel messages, not direct or broadcast
-        if isinstance(msg, tt_message.ChannelMessage):
-            try:
+        """Handle incoming messages and store channel and direct messages."""
+        try:
+            # Get sender info
+            username = ""
+            if hasattr(msg, 'user') and msg.user:
+                username = str(msg.user.nickname) if hasattr(msg.user, 'nickname') else str(msg.user.username) if hasattr(msg.user, 'username') else ""
+            
+            if isinstance(msg, tt_message.ChannelMessage):
                 channel_name = ""
                 if hasattr(msg, 'channel') and msg.channel:
                     channel_name = str(msg.channel.name) if hasattr(msg.channel, 'name') else ""
                 
-                username = ""
-                if hasattr(msg, 'user') and msg.user:
-                    username = str(msg.user.nickname) if hasattr(msg.user, 'nickname') else str(msg.user.username) if hasattr(msg.user, 'username') else ""
-                
                 channel_messages.append({
+                    "type": "channel",
                     "from_user": username,
                     "channel": channel_name,
                     "content": str(msg.content),
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
-            except Exception:
-                pass
+            elif isinstance(msg, tt_message.DirectMessage):
+                # Store private/direct messages too
+                channel_messages.append({
+                    "type": "private",
+                    "from_user": username,
+                    "channel": "",
+                    "content": str(msg.content),
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+        except Exception:
+            pass
 
     @bot.event
     async def on_error(ename: str, *args: Any, **kwargs: Any) -> None:

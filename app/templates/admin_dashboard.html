@@ -8,7 +8,10 @@
     <style>
         /* Admin panel specific styles */
         body {
-            max-width: 900px;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
         .admin-header {
@@ -16,10 +19,13 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #4CAF50;
         }
         
         .admin-header h1 {
             margin: 0;
+            color: #333;
         }
         
         .logout-btn {
@@ -36,31 +42,330 @@
             background-color: #c82333;
         }
         
+        .main-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            min-height: 600px;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .sidebar h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+        
+        .user-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .user-item {
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-item:hover {
+            background: #e9ecef;
+        }
+        
+        .user-item .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+        
+        .user-item.offline .status-dot {
+            background: #6c757d;
+        }
+        
+        /* Chat area */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            background: #4CAF50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+        
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-actions button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .chat-actions button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* Sound enable banner */
+        .sound-banner {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px 20px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 1px solid #ffc107;
+        }
+        
+        .sound-banner:hover {
+            background: #ffe69c;
+        }
+        
+        .sound-banner.hidden {
+            display: none;
+        }
+        
+        /* Messages area */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 500px;
+            background: #fafafa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+        }
+        
+        .message.channel {
+            align-self: flex-start;
+        }
+        
+        .message.private {
+            align-self: flex-start;
+        }
+        
+        .message.sent {
+            align-self: flex-end;
+        }
+        
+        .message-bubble {
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+        }
+        
+        .message.channel .message-bubble {
+            background: #e8e8e8;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message.private .message-bubble {
+            background: #d4edda;
+            color: #155724;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message.sent .message-bubble {
+            background: #4CAF50;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message-meta {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .message-sender {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .message-type-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #6c5ce7;
+            color: white;
+        }
+        
+        .message-content {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #888;
+            padding: 40px;
+        }
+        
+        .empty-chat svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        /* Input area */
+        .chat-input-container {
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            background: white;
+        }
+        
+        .mention-suggestions {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            display: none;
+        }
+        
+        .mention-suggestions.visible {
+            display: block;
+        }
+        
+        .mention-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .mention-item:hover, .mention-item.selected {
+            background: #f0f0f0;
+        }
+        
+        .mention-item .username {
+            font-weight: 600;
+        }
+        
+        .mention-item .nickname {
+            color: #666;
+            margin-left: 8px;
+        }
+        
+        .chat-input-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .chat-input:focus {
+            border-color: #4CAF50;
+        }
+        
+        .send-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .send-btn:hover {
+            background: #45a049;
+        }
+        
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        /* Tabs for accounts */
         .tabs {
             display: flex;
-            border-bottom: 2px solid #4CAF50;
-            margin-bottom: 20px;
+            gap: 5px;
+            margin-bottom: 15px;
         }
         
         .tab-btn {
-            padding: 12px 24px;
+            padding: 8px 16px;
             border: none;
-            background: none;
+            background: #e9ecef;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 13px;
+            font-weight: 500;
             color: #555;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
+            border-radius: 4px;
         }
         
         .tab-btn:hover {
-            color: #4CAF50;
+            background: #dee2e6;
         }
         
         .tab-btn.active {
-            color: #4CAF50;
-            border-bottom-color: #4CAF50;
+            background: #4CAF50;
+            color: white;
         }
         
         .tab-content {
@@ -71,165 +376,37 @@
             display: block;
         }
         
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
+        /* User accounts list */
+        .accounts-list {
+            max-height: 200px;
+            overflow-y: auto;
         }
         
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+        .account-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
         }
         
-        th {
-            background-color: #4CAF50;
+        .account-type {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .account-type.admin {
+            background: #dc3545;
             color: white;
         }
         
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
-        
-        .empty-message {
-            text-align: center;
-            padding: 20px;
-            color: #888;
-            font-style: italic;
-        }
-        
-        .action-btn {
-            background-color: #2196F3;
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .action-btn:hover {
-            background-color: #1976D2;
-        }
-        
-        .refresh-btn {
-            background-color: #4CAF50;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-        
-        .refresh-btn:hover {
-            background-color: #45a049;
-        }
-        
-        .clear-btn {
-            background-color: #ff9800;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-        
-        .clear-btn:hover {
-            background-color: #f57c00;
-        }
-        
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 30px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 500px;
-            position: relative;
-        }
-        
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-        }
-        
-        .modal-close:hover {
-            color: #333;
-        }
-        
-        .modal h2 {
-            margin-top: 0;
-            color: #333;
-        }
-        
-        .modal textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            resize: vertical;
-            min-height: 100px;
-            box-sizing: border-box;
-        }
-        
-        .modal button[type="submit"] {
-            margin-top: 15px;
-            width: 100%;
-        }
-        
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        .badge-admin {
-            background-color: #dc3545;
+        .account-type.user {
+            background: #28a745;
             color: white;
         }
         
-        .badge-user {
-            background-color: #28a745;
-            color: white;
-        }
-        
-        .message-row {
-            background-color: #f9f9f9;
-        }
-        
-        .message-row:nth-child(odd) {
-            background-color: #fff;
-        }
-        
+        /* Toast */
         .toast {
             position: fixed;
             bottom: 20px;
@@ -249,6 +426,39 @@
         .toast-error {
             background-color: #dc3545;
         }
+        
+        .back-link {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .back-link a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Connection status */
+        .connection-status {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+        
+        .connection-dot.disconnected {
+            background: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -258,118 +468,82 @@
         <a href="{{ request.url_for('admin_home') }}?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">{{ t.russian }}</a>
     </div>
     
-    <div class="form-container">
-        <div class="admin-header">
-            <h1>{{ t.admin_header }}</h1>
+    <div class="admin-header">
+        <h1>{{ t.admin_header }}</h1>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="connection-status">
+                <span class="connection-dot" id="connection-dot"></span>
+                <span id="connection-text">Connected</span>
+            </div>
             <a href="{{ request.url_for('admin_logout') }}?lang={{ lang }}" class="logout-btn">{{ t.admin_logout_button }}</a>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('accounts')">{{ t.tab_accounts }}</button>
-            <button class="tab-btn" onclick="showTab('online')">{{ t.tab_online }}</button>
-            <button class="tab-btn" onclick="showTab('messages')">{{ t.tab_messages }}</button>
-        </div>
-        
-        <!-- User Accounts Tab -->
-        <div id="accounts-tab" class="tab-content active">
-            <h2>{{ t.accounts_header }}</h2>
-            <button class="refresh-btn" onclick="loadAccounts()">↻ Refresh</button>
-            <div id="accounts-loading" class="loading">{{ t.accounts_loading }}</div>
-            <div id="accounts-table" style="display: none;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>{{ t.accounts_username }}</th>
-                            <th>{{ t.accounts_type }}</th>
-                            <th>{{ t.accounts_note }}</th>
-                        </tr>
-                    </thead>
-                    <tbody id="accounts-body">
-                    </tbody>
-                </table>
-            </div>
-            <div id="accounts-empty" class="empty-message" style="display: none;">{{ t.accounts_empty }}</div>
-        </div>
-        
-        <!-- Online Users Tab -->
-        <div id="online-tab" class="tab-content">
-            <h2>{{ t.online_header }}</h2>
-            <button class="refresh-btn" onclick="loadOnlineUsers()">↻ Refresh</button>
-            <div id="online-loading" class="loading">{{ t.online_loading }}</div>
-            <div id="online-table" style="display: none;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>{{ t.online_username }}</th>
-                            <th>{{ t.online_nickname }}</th>
-                            <th>{{ t.online_channel }}</th>
-                            <th>{{ t.online_status }}</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="online-body">
-                    </tbody>
-                </table>
-            </div>
-            <div id="online-empty" class="empty-message" style="display: none;">{{ t.online_empty }}</div>
-        </div>
-        
-        <!-- Messages Tab -->
-        <div id="messages-tab" class="tab-content">
-            <h2>{{ t.messages_header }}</h2>
-            <button class="refresh-btn" onclick="loadMessages()">↻ Refresh</button>
-            <button class="clear-btn" onclick="clearMessages()">{{ t.messages_clear }}</button>
-            <div id="messages-loading" class="loading" style="display: none;">Loading...</div>
-            <div id="messages-table" style="display: none;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>{{ t.messages_time }}</th>
-                            <th>{{ t.messages_from }}</th>
-                            <th>{{ t.messages_channel }}</th>
-                            <th>{{ t.messages_content }}</th>
-                        </tr>
-                    </thead>
-                    <tbody id="messages-body">
-                    </tbody>
-                </table>
-            </div>
-            <div id="messages-empty" class="empty-message">{{ t.messages_empty }}</div>
-            
-            <!-- Channel message reply form -->
-            <div class="reply-form" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
-                <h3 style="margin-bottom: 10px;">{{ t.messages_reply }}</h3>
-                <form id="channel-reply-form" onsubmit="sendChannelMessage(event)" style="display: flex; gap: 10px;">
-                    <input type="text" id="channel-message" placeholder="{{ t.messages_reply_placeholder }}" required 
-                           style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                    <button type="submit" class="action-btn" style="padding: 10px 20px;">{{ t.messages_reply_send }}</button>
-                </form>
-            </div>
-        </div>
-        
-        <div class="back-link">
-            <a href="{{ request.url_for('home') }}?lang={{ lang }}">{{ t.admin_back_to_registration }}</a>
         </div>
     </div>
     
-    <!-- Private Message Modal -->
-    <div id="pm-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closeModal()">&times;</span>
-            <h2>{{ t.pm_header }}</h2>
-            <form id="pm-form" onsubmit="sendPrivateMessage(event)">
-                <div class="form-group">
-                    <label>{{ t.pm_to_user }}</label>
-                    <input type="text" id="pm-to-user" readonly>
-                    <input type="hidden" id="pm-user-id">
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="showSidebarTab('online')">{{ t.tab_online }}</button>
+                    <button class="tab-btn" onclick="showSidebarTab('accounts')">{{ t.tab_accounts }}</button>
                 </div>
-                <div class="form-group">
-                    <label for="pm-message">{{ t.pm_message }}</label>
-                    <textarea id="pm-message" required placeholder="..."></textarea>
+                
+                <div id="online-tab" class="tab-content active">
+                    <ul class="user-list" id="online-users-list">
+                        <li class="user-item loading">Loading...</li>
+                    </ul>
                 </div>
-                <button type="submit">{{ t.pm_send_button }}</button>
-            </form>
+                
+                <div id="accounts-tab" class="tab-content">
+                    <div class="accounts-list" id="accounts-list">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
         </div>
+        
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>{{ t.messages_header }}</h2>
+                <div class="chat-actions">
+                    <button onclick="clearMessages()">{{ t.messages_clear }}</button>
+                </div>
+            </div>
+            
+            <!-- Sound enable banner -->
+            <div class="sound-banner" id="sound-banner" onclick="enableSound()">
+                {{ t.messages_enable_sound }}
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <div class="empty-chat" id="empty-chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span>{{ t.messages_empty }}</span>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="mention-suggestions" id="mention-suggestions"></div>
+                <form class="chat-input-form" onsubmit="sendMessage(event)">
+                    <input type="text" class="chat-input" id="message-input" 
+                           placeholder="{{ t.messages_reply_placeholder }}" 
+                           autocomplete="off"
+                           oninput="handleInput(event)">
+                    <button type="submit" class="send-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="back-link">
+        <a href="{{ request.url_for('home') }}?lang={{ lang }}">{{ t.admin_back_to_registration }}</a>
     </div>
     
     <!-- Toast notification -->
@@ -377,20 +551,23 @@
     
     <script>
         const translations = {
-            accounts_type_default: "{{ t.accounts_type_default }}",
-            accounts_type_admin: "{{ t.accounts_type_admin }}",
-            online_send_message: "{{ t.online_send_message }}",
             pm_sent_success: "{{ t.pm_sent_success }}",
             pm_sent_error: "{{ t.pm_sent_error }}",
             channel_msg_success: "{{ t.messages_reply_success }}",
-            channel_msg_error: "{{ t.messages_reply_error }}"
+            channel_msg_error: "{{ t.messages_reply_error }}",
+            messages_private: "{{ t.messages_private }}",
+            sound_enabled: "{{ t.messages_sound_enabled }}"
         };
         
-        // Track message counts to detect new messages
-        let lastMessageCount = 0;
+        // State
         let audioContext = null;
+        let soundEnabled = false;
+        let onlineUsers = [];
+        let lastMessageCount = 0;
+        let eventSource = null;
+        let selectedMentionIndex = 0;
         
-        // Initialize AudioContext on first user interaction
+        // Initialize AudioContext
         function initAudioContext() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -398,353 +575,358 @@
             return audioContext;
         }
         
-        // Play a beautiful notification sound using Web Audio API
-        function playNotificationSound() {
+        // Enable sound on user interaction
+        function enableSound() {
             try {
                 const ctx = initAudioContext();
                 if (ctx.state === 'suspended') {
                     ctx.resume();
                 }
-                
-                const now = ctx.currentTime;
-                
-                // Create a pleasant two-tone chime
-                // First tone
-                const osc1 = ctx.createOscillator();
-                const gain1 = ctx.createGain();
-                osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(880, now); // A5
-                gain1.gain.setValueAtTime(0, now);
-                gain1.gain.linearRampToValueAtTime(0.3, now + 0.02);
-                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc1.connect(gain1);
-                gain1.connect(ctx.destination);
-                osc1.start(now);
-                osc1.stop(now + 0.3);
-                
-                // Second tone (slightly delayed, higher pitch)
-                const osc2 = ctx.createOscillator();
-                const gain2 = ctx.createGain();
-                osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(1174.66, now + 0.1); // D6
-                gain2.gain.setValueAtTime(0, now + 0.1);
-                gain2.gain.linearRampToValueAtTime(0.25, now + 0.12);
-                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc2.connect(gain2);
-                gain2.connect(ctx.destination);
-                osc2.start(now + 0.1);
-                osc2.stop(now + 0.5);
-                
-                // Third tone for a nice trailing effect
-                const osc3 = ctx.createOscillator();
-                const gain3 = ctx.createGain();
-                osc3.type = 'sine';
-                osc3.frequency.setValueAtTime(1318.51, now + 0.2); // E6
-                gain3.gain.setValueAtTime(0, now + 0.2);
-                gain3.gain.linearRampToValueAtTime(0.15, now + 0.22);
-                gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-                osc3.connect(gain3);
-                gain3.connect(ctx.destination);
-                osc3.start(now + 0.2);
-                osc3.stop(now + 0.6);
-                
+                soundEnabled = true;
+                document.getElementById('sound-banner').classList.add('hidden');
+                showToast(translations.sound_enabled, true);
+                // Play a test sound
+                playChannelNotification();
             } catch (e) {
                 console.log('Audio not available:', e);
             }
         }
         
-        // Enable audio on first user interaction
-        document.addEventListener('click', function enableAudio() {
-            initAudioContext();
-            document.removeEventListener('click', enableAudio);
-        }, { once: true });
-        
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-            
-            // Load data for the tab
-            if (tabName === 'accounts') {
-                loadAccounts();
-            } else if (tabName === 'online') {
-                loadOnlineUsers();
-            } else if (tabName === 'messages') {
-                loadMessages();
-            }
+        // Channel message notification - ascending chime
+        function playChannelNotification() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                // A5 -> D6 -> E6 ascending chime
+                const notes = [880, 1174.66, 1318.51];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
+                    gain.gain.setValueAtTime(0, now + i * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.2, now + i * 0.1 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.3);
+                });
+            } catch (e) {}
         }
         
+        // Private message notification - different descending chime
+        function playPrivateNotification() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                // Higher pitch, two-tone for private messages
+                const notes = [1396.91, 1046.50]; // F6 -> C6 descending
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle'; // Different waveform
+                    osc.frequency.setValueAtTime(freq, now + i * 0.15);
+                    gain.gain.setValueAtTime(0, now + i * 0.15);
+                    gain.gain.linearRampToValueAtTime(0.25, now + i * 0.15 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.15);
+                    osc.stop(now + i * 0.15 + 0.35);
+                });
+            } catch (e) {}
+        }
+        
+        // Show toast notification
         function showToast(message, isSuccess) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = 'toast ' + (isSuccess ? 'toast-success' : 'toast-error');
             toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
         
-        async function loadAccounts() {
-            const loading = document.getElementById('accounts-loading');
-            const table = document.getElementById('accounts-table');
-            const empty = document.getElementById('accounts-empty');
-            const tbody = document.getElementById('accounts-body');
+        // Sidebar tabs
+        function showSidebarTab(tabName) {
+            document.querySelectorAll('.sidebar .tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.sidebar .tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
             
-            loading.style.display = 'block';
-            table.style.display = 'none';
-            empty.style.display = 'none';
-            
-            try {
-                const response = await fetch('{{ request.url_for("get_accounts") }}');
-                const data = await response.json();
-                
-                loading.style.display = 'none';
-                
-                if (data.error) {
-                    showToast(data.error, false);
-                    return;
-                }
-                
-                if (data.accounts && data.accounts.length > 0) {
-                    tbody.innerHTML = '';
-                    data.accounts.forEach(account => {
-                        const row = document.createElement('tr');
-                        const typeLabel = account.user_type === 'admin' ? translations.accounts_type_admin : translations.accounts_type_default;
-                        const badgeClass = account.user_type === 'admin' ? 'badge-admin' : 'badge-user';
-                        
-                        // Create cells safely using textContent
-                        const usernameCell = document.createElement('td');
-                        usernameCell.textContent = account.username;
-                        
-                        const typeCell = document.createElement('td');
-                        const badge = document.createElement('span');
-                        badge.className = 'badge ' + badgeClass;
-                        badge.textContent = typeLabel;
-                        typeCell.appendChild(badge);
-                        
-                        const noteCell = document.createElement('td');
-                        noteCell.textContent = account.note || '';
-                        
-                        row.appendChild(usernameCell);
-                        row.appendChild(typeCell);
-                        row.appendChild(noteCell);
-                        tbody.appendChild(row);
-                    });
-                    table.style.display = 'block';
-                } else {
-                    empty.style.display = 'block';
-                }
-            } catch (error) {
-                loading.style.display = 'none';
-                showToast('Error loading accounts', false);
-            }
+            if (tabName === 'accounts') loadAccounts();
+            if (tabName === 'online') loadOnlineUsers();
         }
         
+        // Load online users
         async function loadOnlineUsers() {
-            const loading = document.getElementById('online-loading');
-            const table = document.getElementById('online-table');
-            const empty = document.getElementById('online-empty');
-            const tbody = document.getElementById('online-body');
-            
-            loading.style.display = 'block';
-            table.style.display = 'none';
-            empty.style.display = 'none';
-            
             try {
                 const response = await fetch('{{ request.url_for("get_online_users") }}');
                 const data = await response.json();
                 
-                loading.style.display = 'none';
+                if (data.users) {
+                    onlineUsers = data.users;
+                    const list = document.getElementById('online-users-list');
+                    list.innerHTML = '';
+                    
+                    if (data.users.length === 0) {
+                        list.innerHTML = '<li class="user-item">No users online</li>';
+                        return;
+                    }
+                    
+                    data.users.forEach(user => {
+                        const li = document.createElement('li');
+                        li.className = 'user-item';
+                        li.innerHTML = '<span class="status-dot"></span>';
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = user.nickname || user.username;
+                        li.appendChild(nameSpan);
+                        li.onclick = () => insertMention(user.username, user.nickname);
+                        list.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+        
+        // Load accounts
+        async function loadAccounts() {
+            try {
+                const response = await fetch('{{ request.url_for("get_accounts") }}');
+                const data = await response.json();
                 
-                if (data.error) {
-                    showToast(data.error, false);
+                if (data.accounts) {
+                    const list = document.getElementById('accounts-list');
+                    list.innerHTML = '';
+                    
+                    data.accounts.forEach(account => {
+                        const div = document.createElement('div');
+                        div.className = 'account-item';
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = account.username;
+                        
+                        const typeSpan = document.createElement('span');
+                        typeSpan.className = 'account-type ' + (account.user_type === 'admin' ? 'admin' : 'user');
+                        typeSpan.textContent = account.user_type === 'admin' ? 'Admin' : 'User';
+                        
+                        div.appendChild(nameSpan);
+                        div.appendChild(typeSpan);
+                        list.appendChild(div);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading accounts:', error);
+            }
+        }
+        
+        // Render messages
+        function renderMessages(messages) {
+            const container = document.getElementById('chat-messages');
+            const emptyChat = document.getElementById('empty-chat');
+            
+            if (!messages || messages.length === 0) {
+                container.innerHTML = '';
+                if (emptyChat) {
+                    container.appendChild(emptyChat);
+                    emptyChat.style.display = 'flex';
+                }
+                return;
+            }
+            
+            if (emptyChat) {
+                emptyChat.style.display = 'none';
+            }
+            
+            // Remove all children except the empty-chat element
+            const children = Array.from(container.children);
+            children.forEach(child => {
+                if (child.id !== 'empty-chat') {
+                    container.removeChild(child);
+                }
+            });
+            
+            messages.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message ' + (msg.type || 'channel');
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                
+                const content = document.createElement('div');
+                content.className = 'message-content';
+                content.textContent = msg.content;
+                bubble.appendChild(content);
+                
+                const meta = document.createElement('div');
+                meta.className = 'message-meta';
+                
+                const sender = document.createElement('span');
+                sender.className = 'message-sender';
+                sender.textContent = msg.from_user;
+                meta.appendChild(sender);
+                
+                if (msg.type === 'private') {
+                    const badge = document.createElement('span');
+                    badge.className = 'message-type-badge';
+                    badge.textContent = translations.messages_private;
+                    meta.appendChild(badge);
+                }
+                
+                const time = document.createElement('span');
+                time.textContent = msg.time;
+                meta.appendChild(time);
+                
+                msgDiv.appendChild(bubble);
+                msgDiv.appendChild(meta);
+                container.appendChild(msgDiv);
+            });
+            
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // Handle input for @mentions
+        function handleInput(event) {
+            const input = event.target;
+            const value = input.value;
+            const cursorPos = input.selectionStart;
+            
+            // Check if we're typing a mention
+            const textBeforeCursor = value.substring(0, cursorPos);
+            const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+            
+            if (lastAtIndex !== -1) {
+                const searchText = textBeforeCursor.substring(lastAtIndex + 1).toLowerCase();
+                
+                // Check if there's a space between @ and cursor
+                if (!searchText.includes(' ')) {
+                    showMentionSuggestions(searchText);
                     return;
                 }
-                
-                if (data.users && data.users.length > 0) {
-                    tbody.innerHTML = '';
-                    data.users.forEach(user => {
-                        const row = document.createElement('tr');
-                        
-                        // Create cells safely
-                        const usernameCell = document.createElement('td');
-                        usernameCell.textContent = user.username || '';
-                        
-                        const nicknameCell = document.createElement('td');
-                        nicknameCell.textContent = user.nickname || '';
-                        
-                        const channelCell = document.createElement('td');
-                        channelCell.textContent = user.channel || '';
-                        
-                        const statusCell = document.createElement('td');
-                        statusCell.textContent = user.status || '';
-                        
-                        const actionCell = document.createElement('td');
-                        const actionBtn = document.createElement('button');
-                        actionBtn.className = 'action-btn';
-                        actionBtn.textContent = translations.online_send_message;
-                        actionBtn.onclick = () => openMessageModal(user.id, user.nickname || user.username || '');
-                        actionCell.appendChild(actionBtn);
-                        
-                        row.appendChild(usernameCell);
-                        row.appendChild(nicknameCell);
-                        row.appendChild(channelCell);
-                        row.appendChild(statusCell);
-                        row.appendChild(actionCell);
-                        tbody.appendChild(row);
-                    });
-                    table.style.display = 'block';
-                } else {
-                    empty.style.display = 'block';
-                }
-            } catch (error) {
-                loading.style.display = 'none';
-                showToast('Error loading users', false);
             }
+            
+            hideMentionSuggestions();
         }
         
-        async function loadMessages() {
-            const loading = document.getElementById('messages-loading');
-            const table = document.getElementById('messages-table');
-            const empty = document.getElementById('messages-empty');
-            const tbody = document.getElementById('messages-body');
+        // Show mention suggestions
+        function showMentionSuggestions(searchText) {
+            const container = document.getElementById('mention-suggestions');
+            const filtered = onlineUsers.filter(user => 
+                (user.username && user.username.toLowerCase().includes(searchText)) ||
+                (user.nickname && user.nickname.toLowerCase().includes(searchText))
+            );
             
-            loading.style.display = 'block';
-            table.style.display = 'none';
-            empty.style.display = 'none';
+            if (filtered.length === 0) {
+                hideMentionSuggestions();
+                return;
+            }
+            
+            container.innerHTML = '';
+            filtered.slice(0, 5).forEach((user, index) => {
+                const div = document.createElement('div');
+                div.className = 'mention-item' + (index === selectedMentionIndex ? ' selected' : '');
+                div.innerHTML = '<span class="username">@' + escapeHtml(user.username) + '</span>' +
+                               (user.nickname ? '<span class="nickname">(' + escapeHtml(user.nickname) + ')</span>' : '');
+                div.onclick = () => selectMention(user);
+                container.appendChild(div);
+            });
+            
+            container.classList.add('visible');
+        }
+        
+        function hideMentionSuggestions() {
+            document.getElementById('mention-suggestions').classList.remove('visible');
+            selectedMentionIndex = 0;
+        }
+        
+        function selectMention(user) {
+            const input = document.getElementById('message-input');
+            const value = input.value;
+            const cursorPos = input.selectionStart;
+            const textBeforeCursor = value.substring(0, cursorPos);
+            const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+            
+            const newValue = value.substring(0, lastAtIndex) + '@' + user.username + ' ' + value.substring(cursorPos);
+            input.value = newValue;
+            input.focus();
+            hideMentionSuggestions();
+        }
+        
+        function insertMention(username, nickname) {
+            const input = document.getElementById('message-input');
+            input.value = '@' + username + ' ';
+            input.focus();
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Send message
+        async function sendMessage(event) {
+            event.preventDefault();
+            
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Check if it's a private message (@username message)
+            const pmMatch = message.match(/^@(\S+)\s+(.+)/);
             
             try {
-                const response = await fetch('{{ request.url_for("get_channel_messages") }}');
-                const data = await response.json();
+                let response;
+                const formData = new FormData();
                 
-                loading.style.display = 'none';
-                
-                if (data.messages && data.messages.length > 0) {
-                    // Check if there are new messages and play notification sound
-                    if (data.messages.length > lastMessageCount && lastMessageCount > 0) {
-                        playNotificationSound();
-                    }
-                    lastMessageCount = data.messages.length;
+                if (pmMatch) {
+                    // Private message
+                    const targetUsername = pmMatch[1];
+                    const pmContent = pmMatch[2];
                     
-                    tbody.innerHTML = '';
-                    // Show messages in reverse order (newest first)
-                    data.messages.slice().reverse().forEach(msg => {
-                        const row = document.createElement('tr');
-                        row.className = 'message-row';
-                        
-                        // Create cells safely using textContent
-                        const timeCell = document.createElement('td');
-                        timeCell.textContent = msg.time || '';
-                        
-                        const fromCell = document.createElement('td');
-                        fromCell.textContent = msg.from_user || '';
-                        
-                        const channelCell = document.createElement('td');
-                        channelCell.textContent = msg.channel || '';
-                        
-                        const contentCell = document.createElement('td');
-                        contentCell.textContent = msg.content || '';
-                        
-                        row.appendChild(timeCell);
-                        row.appendChild(fromCell);
-                        row.appendChild(channelCell);
-                        row.appendChild(contentCell);
-                        tbody.appendChild(row);
+                    // Find user ID from username
+                    const targetUser = onlineUsers.find(u => 
+                        u.username.toLowerCase() === targetUsername.toLowerCase()
+                    );
+                    
+                    if (!targetUser) {
+                        showToast('User not found online: ' + targetUsername, false);
+                        return;
+                    }
+                    
+                    formData.append('user_id', targetUser.id);
+                    formData.append('message', pmContent);
+                    
+                    response = await fetch('{{ request.url_for("send_private_message") }}', {
+                        method: 'POST',
+                        body: formData
                     });
-                    table.style.display = 'block';
                 } else {
-                    empty.style.display = 'block';
+                    // Channel message
+                    formData.append('message', message);
+                    
+                    response = await fetch('{{ request.url_for("send_channel_message") }}', {
+                        method: 'POST',
+                        body: formData
+                    });
                 }
-            } catch (error) {
-                loading.style.display = 'none';
-                showToast('Error loading messages', false);
-            }
-        }
-        
-        async function clearMessages() {
-            try {
-                const response = await fetch('{{ request.url_for("clear_channel_messages") }}', {
-                    method: 'POST'
-                });
+                
                 const data = await response.json();
                 
                 if (data.success) {
-                    loadMessages();
-                } else {
-                    showToast(data.error || 'Error clearing messages', false);
-                }
-            } catch (error) {
-                showToast('Error clearing messages', false);
-            }
-        }
-        
-        function openMessageModal(userId, userName) {
-            document.getElementById('pm-user-id').value = userId;
-            document.getElementById('pm-to-user').value = userName;
-            document.getElementById('pm-message').value = '';
-            document.getElementById('pm-modal').style.display = 'block';
-        }
-        
-        function closeModal() {
-            document.getElementById('pm-modal').style.display = 'none';
-        }
-        
-        async function sendPrivateMessage(event) {
-            event.preventDefault();
-            
-            const userId = document.getElementById('pm-user-id').value;
-            const message = document.getElementById('pm-message').value;
-            
-            try {
-                const formData = new FormData();
-                formData.append('user_id', userId);
-                formData.append('message', message);
-                
-                const response = await fetch('{{ request.url_for("send_private_message") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    closeModal();
-                    showToast(translations.pm_sent_success, true);
-                } else {
-                    showToast(data.error || translations.pm_sent_error, false);
-                }
-            } catch (error) {
-                showToast(translations.pm_sent_error, false);
-            }
-        }
-        
-        async function sendChannelMessage(event) {
-            event.preventDefault();
-            
-            const message = document.getElementById('channel-message').value;
-            
-            try {
-                const formData = new FormData();
-                formData.append('message', message);
-                
-                const response = await fetch('{{ request.url_for("send_channel_message") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('channel-message').value = '';
+                    input.value = '';
                     showToast(translations.channel_msg_success, true);
-                    // Reload messages after sending
-                    loadMessages();
                 } else {
                     showToast(data.error || translations.channel_msg_error, false);
                 }
@@ -753,39 +935,106 @@
             }
         }
         
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('pm-modal');
-            if (event.target === modal) {
-                closeModal();
+        // Clear messages
+        async function clearMessages() {
+            try {
+                await fetch('{{ request.url_for("clear_channel_messages") }}', { method: 'POST' });
+                renderMessages([]);
+            } catch (error) {
+                showToast('Error clearing messages', false);
             }
         }
         
-        // Auto-refresh messages every 5 seconds when on Messages tab
-        let messageRefreshInterval = null;
-        
-        function startMessageAutoRefresh() {
-            if (!messageRefreshInterval) {
-                messageRefreshInterval = setInterval(() => {
-                    const messagesTab = document.getElementById('messages-tab');
-                    if (messagesTab && messagesTab.classList.contains('active')) {
-                        loadMessages();
+        // Connect to SSE stream
+        function connectToStream() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            eventSource = new EventSource('{{ request.url_for("stream_messages") }}');
+            
+            eventSource.onopen = function() {
+                document.getElementById('connection-dot').classList.remove('disconnected');
+                document.getElementById('connection-text').textContent = 'Connected';
+            };
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.messages) {
+                        // Check for new messages to play notification
+                        if (data.messages.length > lastMessageCount && lastMessageCount > 0) {
+                            // Check if the newest message is private or channel
+                            const newMessages = data.messages.slice(lastMessageCount);
+                            newMessages.forEach(msg => {
+                                if (msg.type === 'private') {
+                                    playPrivateNotification();
+                                } else {
+                                    playChannelNotification();
+                                }
+                            });
+                        }
+                        lastMessageCount = data.messages.length;
+                        renderMessages(data.messages);
                     }
-                }, 5000);
-            }
+                } catch (e) {
+                    console.error('Error parsing message:', e);
+                }
+            };
+            
+            eventSource.onerror = function() {
+                document.getElementById('connection-dot').classList.add('disconnected');
+                document.getElementById('connection-text').textContent = 'Disconnected';
+                
+                // Attempt to reconnect after 3 seconds
+                setTimeout(connectToStream, 3000);
+            };
         }
         
-        function stopMessageAutoRefresh() {
-            if (messageRefreshInterval) {
-                clearInterval(messageRefreshInterval);
-                messageRefreshInterval = null;
+        // Handle keyboard navigation for mentions
+        document.getElementById('message-input').addEventListener('keydown', function(e) {
+            const suggestions = document.getElementById('mention-suggestions');
+            if (!suggestions.classList.contains('visible')) return;
+            
+            const items = suggestions.querySelectorAll('.mention-item');
+            if (items.length === 0) return;
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedMentionIndex = Math.min(selectedMentionIndex + 1, items.length - 1);
+                updateMentionSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedMentionIndex = Math.max(selectedMentionIndex - 1, 0);
+                updateMentionSelection(items);
+            } else if (e.key === 'Enter' && suggestions.classList.contains('visible')) {
+                e.preventDefault();
+                items[selectedMentionIndex].click();
+            } else if (e.key === 'Escape') {
+                hideMentionSuggestions();
             }
+        });
+        
+        function updateMentionSelection(items) {
+            items.forEach((item, index) => {
+                item.classList.toggle('selected', index === selectedMentionIndex);
+            });
         }
         
-        // Load accounts on page load and start auto-refresh for messages
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadAccounts();
-            startMessageAutoRefresh();
+            loadOnlineUsers();
+            connectToStream();
+            
+            // Refresh online users periodically
+            setInterval(loadOnlineUsers, 30000);
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (eventSource) {
+                eventSource.close();
+            }
         });
     </script>
 </body>

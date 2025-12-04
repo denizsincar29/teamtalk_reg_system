@@ -97,18 +97,21 @@ TRANSLATIONS = {
         "pm_sent_error": "Failed to send message.",
         
         # Channel messages
-        "messages_header": "Channel Messages",
+        "messages_header": "Chat",
         "messages_from": "From",
         "messages_channel": "Channel",
         "messages_content": "Message",
         "messages_time": "Time",
-        "messages_empty": "No messages yet.",
-        "messages_clear": "Clear Messages",
+        "messages_empty": "No messages yet. Start the conversation!",
+        "messages_clear": "Clear Chat",
         "messages_reply": "Reply to Channel",
-        "messages_reply_placeholder": "Type your message...",
+        "messages_reply_placeholder": "Type a message... (use @username for private)",
         "messages_reply_send": "Send",
-        "messages_reply_success": "Message sent to channel!",
+        "messages_reply_success": "Message sent!",
         "messages_reply_error": "Failed to send message.",
+        "messages_private": "Private",
+        "messages_enable_sound": "🔔 Click to enable notification sounds",
+        "messages_sound_enabled": "Notification sounds enabled",
         
         # Navigation
         "admin_back_to_registration": "← Back to Registration",
@@ -204,18 +207,21 @@ TRANSLATIONS = {
         "pm_sent_error": "Не удалось отправить сообщение.",
         
         # Channel messages
-        "messages_header": "Сообщения каналов",
+        "messages_header": "Чат",
         "messages_from": "От",
         "messages_channel": "Канал",
         "messages_content": "Сообщение",
         "messages_time": "Время",
-        "messages_empty": "Пока нет сообщений.",
-        "messages_clear": "Очистить сообщения",
+        "messages_empty": "Пока нет сообщений. Начните разговор!",
+        "messages_clear": "Очистить чат",
         "messages_reply": "Ответить в канал",
-        "messages_reply_placeholder": "Введите сообщение...",
+        "messages_reply_placeholder": "Введите сообщение... (@имя для личного)",
         "messages_reply_send": "Отправить",
-        "messages_reply_success": "Сообщение отправлено в канал!",
+        "messages_reply_success": "Сообщение отправлено!",
         "messages_reply_error": "Не удалось отправить сообщение.",
+        "messages_private": "Личное",
+        "messages_enable_sound": "🔔 Нажмите для включения звуковых уведомлений",
+        "messages_sound_enabled": "Звуковые уведомления включены",
         
         # Navigation
         "admin_back_to_registration": "← Вернуться к регистрации",

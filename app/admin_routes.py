@@ -1,13 +1,15 @@
 """Admin panel routes for the TeamTalk Registration System."""
 
+import asyncio
 import html
+import json
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from fastapi import APIRouter, Form, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
 from .i18n import DEFAULT_LANGUAGE, LANGUAGES, get_translations
@@ -268,3 +270,44 @@ async def clear_channel_messages(request: Request) -> JSONResponse:
     await tt_manager.clear_channel_messages()
     
     return JSONResponse({"success": True})
+
+
+async def message_event_generator(request: Request) -> AsyncGenerator[str, None]:
+    """Generate SSE events for message updates."""
+    last_count = 0
+    last_messages: list[dict[str, Any]] = []
+    
+    while True:
+        # Check if client disconnected
+        if await request.is_disconnected():
+            break
+        
+        messages = await tt_manager.get_channel_messages()
+        
+        # Check for new messages
+        if len(messages) != last_count or messages != last_messages:
+            # Send the new messages
+            yield f"data: {json.dumps({'messages': messages})}\n\n"
+            last_count = len(messages)
+            last_messages = messages.copy() if messages else []
+        
+        # Wait a bit before checking again (500ms for responsive updates)
+        await asyncio.sleep(0.5)
+
+
+@router.get("/api/messages/stream")
+async def stream_messages(request: Request) -> StreamingResponse:
+    """Stream messages using Server-Sent Events."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    return StreamingResponse(
+        message_event_generator(request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
