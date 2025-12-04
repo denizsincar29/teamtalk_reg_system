@@ -12,6 +12,7 @@ import pytalk
 from pytalk import enums, Permission, message as tt_message
 from pytalk import channel as tt_channel
 from pytalk import user as tt_user
+from pytalk.enums import Status
 
 from .config import BOT_SERVER_CONFIG
 
@@ -24,6 +25,9 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 worker_logger = logging.getLogger("teamtalk.bot_worker")
+
+# Status mode bitmask for extracting mode from combined status integer
+STATUS_MODE_MASK = 0xFF
 
 # Default user rights for newly registered users
 # This gives users standard capabilities: voice, messaging, file transfers, etc.
@@ -436,7 +440,6 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                 continue
                             # Use pytalk Status enum for proper status flags
                             # status_mode: 0=online, 1=away, 2=question
-                            from pytalk.enums import Status
                             if status_mode == 1:
                                 status_flags = Status.away.neutral
                             elif status_mode == 2:
@@ -460,7 +463,7 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             status_mode = getattr(user, 'status_mode', 0) if user else 0
                             status_message = str(getattr(user, 'status_msg', '')) if user else ""
                             # Extract mode bits (0=online, 1=away, 2=question)
-                            mode_bits = status_mode & 0xFF  # Lower 8 bits for mode
+                            mode_bits = status_mode & STATUS_MODE_MASK
                             response_queue.put({"status_mode": mode_bits, "status_message": status_message})
                         except Exception as e:
                             worker_logger.error(f"Failed to get status: {e}", exc_info=True)
