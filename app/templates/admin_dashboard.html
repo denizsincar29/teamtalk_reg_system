@@ -716,8 +716,8 @@
                         soundEnabled = true;
                         document.getElementById('sound-banner').classList.add('hidden');
                         showToast(translations.sound_enabled, true);
-                        // Show a test notification
-                        showNotification('TeamTalk Admin', translations.sound_enabled);
+                        // Show a test notification (always shows to confirm it's working)
+                        showTestNotification('TeamTalk Admin', translations.sound_enabled);
                     } else {
                         // Fallback to just audio if notifications denied
                         enableSound();
@@ -732,10 +732,14 @@
             }
         }
         
-        // Show Web Notification
+        // Show Web Notification - only when app is in background
         function showNotification(title, body, tag = null) {
             if (!notificationsEnabled || !('Notification' in window)) return;
             if (Notification.permission !== 'granted') return;
+            
+            // Only show notification when the page is not visible (app in background)
+            // This works for both desktop browsers and mobile PWAs (including iOS)
+            if (document.visibilityState === 'visible') return;
             
             try {
                 const options = {
@@ -749,6 +753,26 @@
                 new Notification(title, options);
             } catch (e) {
                 console.log('Error showing notification:', e);
+            }
+        }
+        
+        // Show test notification (always shows, bypasses visibility check)
+        function showTestNotification(title, body) {
+            if (!('Notification' in window)) return;
+            if (Notification.permission !== 'granted') return;
+            
+            try {
+                const options = {
+                    body: body,
+                    icon: '/static/icon-192.svg',
+                    badge: '/static/icon-192.svg',
+                    tag: 'teamtalk-test',
+                    renotify: false,
+                    requireInteraction: false
+                };
+                new Notification(title, options);
+            } catch (e) {
+                console.log('Error showing test notification:', e);
             }
         }
         
