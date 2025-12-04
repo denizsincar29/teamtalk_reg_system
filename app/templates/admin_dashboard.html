@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4CAF50">
     <title>{{ t.admin_title }}</title>
     <link rel="stylesheet" href="{{ request.url_for('static', path='style.css') }}">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/static/icon-192.svg">
+    <link rel="apple-touch-icon" href="/static/icon-192.svg">
     <style>
         /* Admin panel specific styles */
         body {
@@ -595,7 +599,7 @@
             </div>
             
             <!-- Sound enable banner -->
-            <div class="sound-banner" id="sound-banner" onclick="enableSound()">
+            <div class="sound-banner" id="sound-banner" onclick="enableNotifications()" onkeydown="if(event.key==='Enter'||event.key===' ')enableNotifications()" tabindex="0" role="button" aria-label="{{ t.messages_enable_sound }}">
                 {{ t.messages_enable_sound }}
             </div>
             
@@ -623,10 +627,6 @@
                 </form>
             </div>
         </div>
-    </div>
-    
-    <div class="back-link">
-        <a href="{{ request.url_for('home') }}?lang={{ lang }}">{{ t.admin_back_to_registration }}</a>
     </div>
     
     <!-- Toast notification -->
@@ -675,12 +675,14 @@
             event_channel_new: "{{ t.event_channel_new }}",
             event_channel_delete: "{{ t.event_channel_delete }}",
             event_bot_connected: "{{ t.event_bot_connected }}",
-            event_connection_lost: "{{ t.event_connection_lost }}"
+            event_connection_lost: "{{ t.event_connection_lost }}",
+            event_root_channel: "{{ t.event_root_channel }}"
         };
         
         // State
         let audioContext = null;
         let soundEnabled = false;
+        let notificationsEnabled = false;
         let onlineUsers = [];
         let channels = [];
         let currentChannelId = 0;
@@ -697,7 +699,59 @@
             return audioContext;
         }
         
-        // Enable sound on user interaction
+        // Enable notifications (Web Notifications API)
+        async function enableNotifications() {
+            try {
+                // Request notification permission
+                if ('Notification' in window) {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        notificationsEnabled = true;
+                        // Also enable sound
+                        const ctx = initAudioContext();
+                        if (ctx.state === 'suspended') {
+                            ctx.resume();
+                        }
+                        soundEnabled = true;
+                        document.getElementById('sound-banner').classList.add('hidden');
+                        showToast(translations.sound_enabled, true);
+                        // Show a test notification
+                        showNotification('TeamTalk Admin', translations.sound_enabled);
+                    } else {
+                        // Fallback to just audio if notifications denied
+                        enableSound();
+                    }
+                } else {
+                    // Fallback for browsers without Notification API
+                    enableSound();
+                }
+            } catch (e) {
+                console.log('Notifications not available:', e);
+                enableSound();
+            }
+        }
+        
+        // Show Web Notification
+        function showNotification(title, body, tag = null) {
+            if (!notificationsEnabled || !('Notification' in window)) return;
+            if (Notification.permission !== 'granted') return;
+            
+            try {
+                const options = {
+                    body: body,
+                    icon: '/static/icon-192.svg',
+                    badge: '/static/icon-192.svg',
+                    tag: tag || 'teamtalk-' + Date.now(),
+                    renotify: false,
+                    requireInteraction: false
+                };
+                new Notification(title, options);
+            } catch (e) {
+                console.log('Error showing notification:', e);
+            }
+        }
+        
+        // Enable sound on user interaction (fallback)
         function enableSound() {
             try {
                 const ctx = initAudioContext();
@@ -889,7 +943,8 @@
         // Format event message for display and screenreader
         function formatEventMessage(event) {
             const nickname = event.nickname || event.username || 'Unknown';
-            const channel = event.channel || '';
+            // Use "root" translation if channel is empty (root channel)
+            const channel = event.channel || translations.event_root_channel;
             
             switch (event.type) {
                 case 'user_login':
@@ -913,12 +968,15 @@
             }
         }
         
-        // Play sound and announce event
+        // Play sound, show notification and announce event
         function handleEvent(event) {
             const message = formatEventMessage(event);
             
             // Announce to screenreader
             announceToScreenReader(message);
+            
+            // Show Web Notification
+            showNotification('TeamTalk', message, 'event-' + event.type);
             
             // Play appropriate sound
             switch (event.type) {
@@ -1520,6 +1578,13 @@
             items.forEach((item, index) => {
                 item.classList.toggle('selected', index === selectedMentionIndex);
             });
+        }
+        
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(reg => console.log('Service Worker registered:', reg.scope))
+                .catch(err => console.log('Service Worker registration failed:', err));
         }
         
         // Initialize on page load
