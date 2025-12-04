@@ -326,7 +326,31 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             if instance is None:
                                 response_queue.put({"success": False, "error": "Not connected"})
                                 continue
-                            instance.leave_channel()
+                            # Get current channel to find its parent
+                            current_channel_id = instance.getMyChannelID()
+                            if current_channel_id == 0:
+                                response_queue.put({"success": False, "error": "Not in any channel"})
+                                continue
+                            
+                            current_channel = instance.get_channel(current_channel_id)
+                            parent_id = 0
+                            if current_channel and hasattr(current_channel, '_channel'):
+                                parent_id = current_channel._channel.nParentID if hasattr(current_channel._channel, 'nParentID') else 0
+                            
+                            if parent_id > 0:
+                                # Join parent channel instead of leaving to vacuum
+                                parent_channel = instance.get_channel(parent_id)
+                                password = ""
+                                try:
+                                    if parent_channel and hasattr(parent_channel, '_channel') and hasattr(parent_channel._channel, 'szPassword'):
+                                        from pytalk.implementation.TeamTalkPy import TeamTalk5 as sdk
+                                        password = sdk.ttstr(parent_channel._channel.szPassword)
+                                except Exception:
+                                    password = ""
+                                instance.join_channel_by_id(parent_id, password)
+                            else:
+                                # No parent (root channel) - leave to vacuum
+                                instance.leave_channel()
                             response_queue.put({"success": True})
                         except Exception as e:
                             response_queue.put({"success": False, "error": str(e)})
@@ -514,6 +538,15 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 # Store private/direct messages too
                 channel_messages.append({
                     "type": "private",
+                    "from_user": username,
+                    "channel": "",
+                    "content": str(msg.content),
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+            elif isinstance(msg, tt_message.BroadcastMessage):
+                # Store broadcast messages with distinct type
+                channel_messages.append({
+                    "type": "broadcast",
                     "from_user": username,
                     "channel": "",
                     "content": str(msg.content),

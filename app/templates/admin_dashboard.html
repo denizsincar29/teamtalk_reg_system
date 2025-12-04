@@ -214,6 +214,13 @@
             border-bottom-left-radius: 4px;
         }
         
+        .message.broadcast .message-bubble {
+            background: #fff3cd;
+            color: #856404;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #ffc107;
+        }
+        
         .message.sent .message-bubble {
             background: #4CAF50;
             color: white;
@@ -239,6 +246,11 @@
             border-radius: 10px;
             background: #6c5ce7;
             color: white;
+        }
+        
+        .message-type-badge.broadcast {
+            background: #ffc107;
+            color: #856404;
         }
         
         .message-content {
@@ -920,6 +932,34 @@
             } catch (e) {}
         }
         
+        // Broadcast message notification - attention-grabbing alert
+        function playBroadcastNotification() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                // Two-tone alert sound (like a horn) for broadcasts
+                // E5 -> A5 -> E5 (attention pattern)
+                const notes = [659.25, 880, 659.25];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth'; // More prominent waveform
+                    osc.frequency.setValueAtTime(freq, now + i * 0.12);
+                    gain.gain.setValueAtTime(0, now + i * 0.12);
+                    gain.gain.linearRampToValueAtTime(0.15, now + i * 0.12 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.12);
+                    osc.stop(now + i * 0.12 + 0.25);
+                });
+            } catch (e) {}
+        }
+        
         // User login notification - welcoming ascending chime
         function playUserLoginNotification() {
             if (!soundEnabled) return;
@@ -1519,6 +1559,11 @@
                     badge.className = 'message-type-badge';
                     badge.textContent = translations.messages_private;
                     meta.appendChild(badge);
+                } else if (msg.type === 'broadcast') {
+                    const badge = document.createElement('span');
+                    badge.className = 'message-type-badge broadcast';
+                    badge.textContent = translations.messages_broadcast;
+                    meta.appendChild(badge);
                 }
                 
                 const time = document.createElement('span');
@@ -1771,7 +1816,7 @@
                     if (data.messages) {
                         // Check for new messages to play notification
                         if (data.messages.length > lastMessageCount && lastMessageCount > 0) {
-                            // Check if the newest message is private or channel
+                            // Check if the newest message is private, broadcast, or channel
                             const newMessages = data.messages.slice(lastMessageCount);
                             newMessages.forEach(msg => {
                                 if (msg.type === 'private') {
@@ -1779,6 +1824,11 @@
                                     const msgText = translations.messages_private + ' ' + msg.from_user + ' ' + msg.content;
                                     announceToScreenReader(msgText);
                                     showNotification('TeamTalk - ' + translations.messages_private, msg.from_user + ': ' + msg.content, 'msg-private-' + Date.now());
+                                } else if (msg.type === 'broadcast') {
+                                    playBroadcastNotification();
+                                    const msgText = translations.messages_broadcast + ' ' + msg.from_user + ' ' + msg.content;
+                                    announceToScreenReader(msgText);
+                                    showNotification('TeamTalk - ' + translations.messages_broadcast, msg.from_user + ': ' + msg.content, 'msg-broadcast-' + Date.now());
                                 } else {
                                     playChannelNotification();
                                     announceToScreenReader(msg.from_user + ' ' + msg.content);
