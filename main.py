@@ -16,6 +16,7 @@ from app.config import APP_HOST, APP_PORT, FORWARDED_ALLOW_IPS, PROXY_HEADERS, R
 from app.manager import tt_manager
 from app.routes import router
 from app.admin_routes import router as admin_router
+from app.scheduler import task_scheduler
 
 
 @asynccontextmanager
@@ -23,8 +24,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application lifespan events."""
     # Startup
     await tt_manager.start()
+    
+    # Initialize scheduler with manager and start it
+    task_scheduler.set_manager(tt_manager)
+    await task_scheduler.start()
+    
     yield
+    
     # Shutdown
+    await task_scheduler.stop()
     tt_manager.stop()
 
 

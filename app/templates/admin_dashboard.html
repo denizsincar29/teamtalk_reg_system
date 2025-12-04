@@ -621,6 +621,181 @@
             padding: 2px 6px;
             border-radius: 3px;
         }
+        
+        /* Scheduler styles */
+        .scheduler-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .scheduler-add-btn {
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .scheduler-add-btn:hover {
+            background: #45a049;
+        }
+        
+        .tasks-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .task-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .task-item.disabled {
+            opacity: 0.6;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .task-name {
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .task-type-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #6c5ce7;
+            color: white;
+        }
+        
+        .task-type-badge.broadcast {
+            background: #ffc107;
+            color: #856404;
+        }
+        
+        .task-details {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .task-btn {
+            padding: 3px 8px;
+            font-size: 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .task-btn.run { background: #17a2b8; color: white; }
+        .task-btn.toggle { background: #6c757d; color: white; }
+        .task-btn.edit { background: #ffc107; color: #333; }
+        .task-btn.delete { background: #dc3545; color: white; }
+        
+        .empty-tasks {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+            font-size: 13px;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-content h3 {
+            margin: 0 0 15px 0;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-cancel {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-save {
+            padding: 8px 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -648,6 +823,7 @@
                 <div class="tabs">
                     <button class="tab-btn active" onclick="showSidebarTab('online')">{{ t.tab_online }}</button>
                     <button class="tab-btn" onclick="showSidebarTab('channels')">{{ t.channels_header }}</button>
+                    <button class="tab-btn" onclick="showSidebarTab('scheduler')">{{ t.scheduler_header }}</button>
                     <button class="tab-btn" onclick="showSidebarTab('accounts')">{{ t.tab_accounts }}</button>
                 </div>
                 
@@ -660,6 +836,15 @@
                 <div id="channels-tab" class="tab-content">
                     <div class="channels-list" id="channels-list">
                         <div class="loading">Loading...</div>
+                    </div>
+                </div>
+                
+                <div id="scheduler-tab" class="tab-content">
+                    <div class="scheduler-section">
+                        <button class="scheduler-add-btn" onclick="openAddTaskModal()">{{ t.scheduler_add_task }}</button>
+                        <div class="tasks-list" id="tasks-list">
+                            <div class="empty-tasks">{{ t.scheduler_no_tasks }}</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -717,6 +902,56 @@
     <!-- Screenreader announcements (ARIA live region) -->
     <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true" role="status"></div>
     
+    <!-- Task Modal -->
+    <div class="modal" id="task-modal">
+        <div class="modal-content">
+            <h3 id="task-modal-title">{{ t.scheduler_add_task }}</h3>
+            <form id="task-form" onsubmit="saveTask(event)">
+                <input type="hidden" id="task-id" value="">
+                
+                <div class="form-group">
+                    <label for="task-name">{{ t.scheduler_task_name }}</label>
+                    <input type="text" id="task-name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="task-type">{{ t.scheduler_task_type }}</label>
+                    <select id="task-type" onchange="onTaskTypeChange()">
+                        <option value="broadcast">{{ t.scheduler_broadcast }}</option>
+                        <option value="channel_message">{{ t.scheduler_channel_message }}</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="task-message">{{ t.scheduler_message }}</label>
+                    <textarea id="task-message" rows="3" required></textarea>
+                </div>
+                
+                <div class="form-group" id="channel-select-group" style="display: none;">
+                    <label for="task-channel">{{ t.scheduler_target_channel }}</label>
+                    <select id="task-channel">
+                        <option value="0">-- {{ t.scheduler_target_channel }} --</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="task-time">{{ t.scheduler_scheduled_time }}</label>
+                    <input type="datetime-local" id="task-time">
+                </div>
+                
+                <div class="form-group">
+                    <label for="task-recurring">{{ t.scheduler_every_minutes }} (0 = {{ t.scheduler_one_time }})</label>
+                    <input type="number" id="task-recurring" min="0" value="0">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeTaskModal()">{{ t.scheduler_cancel }}</button>
+                    <button type="submit" class="btn-save">{{ t.scheduler_save }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <style>
         /* Screenreader only - visually hidden but accessible */
         .sr-only {
@@ -762,7 +997,24 @@
             event_bot_connected: "{{ t.event_bot_connected }}",
             event_connection_lost: "{{ t.event_connection_lost }}",
             event_root_channel: "{{ t.event_root_channel }}",
-            event_root_channel_genitive: "{{ t.event_root_channel_genitive }}"
+            event_root_channel_genitive: "{{ t.event_root_channel_genitive }}",
+            // Scheduler translations
+            scheduler_broadcast: "{{ t.scheduler_broadcast }}",
+            scheduler_channel_message: "{{ t.scheduler_channel_message }}",
+            scheduler_enabled: "{{ t.scheduler_enabled }}",
+            scheduler_disabled: "{{ t.scheduler_disabled }}",
+            scheduler_run_now: "{{ t.scheduler_run_now }}",
+            scheduler_edit: "{{ t.scheduler_edit }}",
+            scheduler_delete: "{{ t.scheduler_delete }}",
+            scheduler_no_tasks: "{{ t.scheduler_no_tasks }}",
+            scheduler_task_created: "{{ t.scheduler_task_created }}",
+            scheduler_task_updated: "{{ t.scheduler_task_updated }}",
+            scheduler_task_deleted: "{{ t.scheduler_task_deleted }}",
+            scheduler_task_executed: "{{ t.scheduler_task_executed }}",
+            scheduler_error: "{{ t.scheduler_error }}",
+            scheduler_add_task: "{{ t.scheduler_add_task }}",
+            scheduler_every_minutes: "{{ t.scheduler_every_minutes }}",
+            scheduler_one_time: "{{ t.scheduler_one_time }}"
         };
         
         // State
@@ -1167,6 +1419,7 @@
             if (tabName === 'accounts') loadAccounts();
             if (tabName === 'online') loadOnlineUsers();
             if (tabName === 'channels') loadChannels();
+            if (tabName === 'scheduler') loadTasks();
         }
         
         // Load channels
@@ -1939,6 +2192,268 @@
                 eventSource.close();
             }
         });
+        
+        // ===== Scheduler Functions =====
+        
+        let schedulerTasks = [];
+        
+        // Load scheduled tasks
+        async function loadTasks() {
+            try {
+                const response = await fetch('{{ request.url_for("get_tasks") }}');
+                const data = await response.json();
+                
+                if (data.tasks) {
+                    schedulerTasks = data.tasks;
+                    renderTasks();
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+        
+        // Render tasks list
+        function renderTasks() {
+            const list = document.getElementById('tasks-list');
+            list.innerHTML = '';
+            
+            if (schedulerTasks.length === 0) {
+                list.innerHTML = '<div class="empty-tasks">' + translations.scheduler_no_tasks + '</div>';
+                return;
+            }
+            
+            schedulerTasks.forEach(task => {
+                const div = document.createElement('div');
+                div.className = 'task-item' + (task.enabled ? '' : ' disabled');
+                
+                const header = document.createElement('div');
+                header.className = 'task-header';
+                
+                const name = document.createElement('span');
+                name.className = 'task-name';
+                name.textContent = task.name;
+                header.appendChild(name);
+                
+                const badge = document.createElement('span');
+                badge.className = 'task-type-badge' + (task.type === 'broadcast' ? ' broadcast' : '');
+                badge.textContent = task.type === 'broadcast' ? translations.scheduler_broadcast : translations.scheduler_channel_message;
+                header.appendChild(badge);
+                
+                div.appendChild(header);
+                
+                const details = document.createElement('div');
+                details.className = 'task-details';
+                
+                let scheduleText = '';
+                if (task.recurring_minutes > 0) {
+                    scheduleText = translations.scheduler_every_minutes + ': ' + task.recurring_minutes;
+                } else if (task.next_run) {
+                    scheduleText = task.next_run.replace('T', ' ').substring(0, 16);
+                } else {
+                    scheduleText = translations.scheduler_one_time;
+                }
+                details.textContent = scheduleText + ' • ' + (task.enabled ? translations.scheduler_enabled : translations.scheduler_disabled);
+                div.appendChild(details);
+                
+                const actions = document.createElement('div');
+                actions.className = 'task-actions';
+                
+                const runBtn = document.createElement('button');
+                runBtn.className = 'task-btn run';
+                runBtn.textContent = translations.scheduler_run_now;
+                runBtn.onclick = () => runTask(task.id);
+                actions.appendChild(runBtn);
+                
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'task-btn toggle';
+                toggleBtn.textContent = task.enabled ? translations.scheduler_disabled : translations.scheduler_enabled;
+                toggleBtn.onclick = () => toggleTask(task.id);
+                actions.appendChild(toggleBtn);
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'task-btn edit';
+                editBtn.textContent = translations.scheduler_edit;
+                editBtn.onclick = () => editTask(task);
+                actions.appendChild(editBtn);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'task-btn delete';
+                deleteBtn.textContent = translations.scheduler_delete;
+                deleteBtn.onclick = () => deleteTask(task.id);
+                actions.appendChild(deleteBtn);
+                
+                div.appendChild(actions);
+                list.appendChild(div);
+            });
+        }
+        
+        // Open add task modal
+        function openAddTaskModal() {
+            document.getElementById('task-modal-title').textContent = translations.scheduler_add_task;
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-name').value = '';
+            document.getElementById('task-type').value = 'broadcast';
+            document.getElementById('task-message').value = '';
+            document.getElementById('task-channel').value = '0';
+            document.getElementById('task-time').value = '';
+            document.getElementById('task-recurring').value = '0';
+            
+            onTaskTypeChange();
+            populateChannelSelect();
+            
+            document.getElementById('task-modal').classList.add('active');
+        }
+        
+        // Close task modal
+        function closeTaskModal() {
+            document.getElementById('task-modal').classList.remove('active');
+        }
+        
+        // Handle task type change
+        function onTaskTypeChange() {
+            const taskType = document.getElementById('task-type').value;
+            const channelGroup = document.getElementById('channel-select-group');
+            channelGroup.style.display = taskType === 'channel_message' ? 'block' : 'none';
+        }
+        
+        // Populate channel select from loaded channels
+        function populateChannelSelect() {
+            const select = document.getElementById('task-channel');
+            select.innerHTML = '<option value="0">-- Select Channel --</option>';
+            
+            channels.forEach(ch => {
+                const option = document.createElement('option');
+                option.value = ch.id;
+                option.textContent = ch.name || ch.path || 'Channel ' + ch.id;
+                select.appendChild(option);
+            });
+        }
+        
+        // Edit task
+        function editTask(task) {
+            document.getElementById('task-modal-title').textContent = translations.scheduler_edit;
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-name').value = task.name || '';
+            document.getElementById('task-type').value = task.type || 'broadcast';
+            document.getElementById('task-message').value = task.message || '';
+            document.getElementById('task-channel').value = task.channel_id || '0';
+            
+            if (task.scheduled_time) {
+                const dt = new Date(task.scheduled_time);
+                document.getElementById('task-time').value = dt.toISOString().slice(0, 16);
+            } else {
+                document.getElementById('task-time').value = '';
+            }
+            
+            document.getElementById('task-recurring').value = task.recurring_minutes || '0';
+            
+            onTaskTypeChange();
+            populateChannelSelect();
+            document.getElementById('task-channel').value = task.channel_id || '0';
+            
+            document.getElementById('task-modal').classList.add('active');
+        }
+        
+        // Save task (create or update)
+        async function saveTask(event) {
+            event.preventDefault();
+            
+            const taskId = document.getElementById('task-id').value;
+            const formData = new FormData();
+            formData.append('task_type', document.getElementById('task-type').value);
+            formData.append('name', document.getElementById('task-name').value);
+            formData.append('message', document.getElementById('task-message').value);
+            formData.append('channel_id', document.getElementById('task-channel').value);
+            formData.append('scheduled_time', document.getElementById('task-time').value);
+            formData.append('recurring_minutes', document.getElementById('task-recurring').value);
+            
+            try {
+                let response;
+                if (taskId) {
+                    response = await fetch('{{ request.url_for("update_task", task_id="__ID__") }}'.replace('__ID__', taskId), {
+                        method: 'PUT',
+                        body: formData
+                    });
+                } else {
+                    response = await fetch('{{ request.url_for("create_task") }}', {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(taskId ? translations.scheduler_task_updated : translations.scheduler_task_created, true);
+                    closeTaskModal();
+                    loadTasks();
+                } else {
+                    showToast(data.error || translations.scheduler_error, false);
+                }
+            } catch (error) {
+                showToast(translations.scheduler_error, false);
+            }
+        }
+        
+        // Run task immediately
+        async function runTask(taskId) {
+            try {
+                const response = await fetch('{{ request.url_for("run_task_now", task_id="__ID__") }}'.replace('__ID__', taskId), {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.scheduler_task_executed, true);
+                } else {
+                    showToast(data.error || translations.scheduler_error, false);
+                }
+            } catch (error) {
+                showToast(translations.scheduler_error, false);
+            }
+        }
+        
+        // Toggle task enabled/disabled
+        async function toggleTask(taskId) {
+            try {
+                const response = await fetch('{{ request.url_for("toggle_task", task_id="__ID__") }}'.replace('__ID__', taskId), {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadTasks();
+                } else {
+                    showToast(data.error || translations.scheduler_error, false);
+                }
+            } catch (error) {
+                showToast(translations.scheduler_error, false);
+            }
+        }
+        
+        // Delete task
+        async function deleteTask(taskId) {
+            if (!confirm(translations.scheduler_delete + '?')) return;
+            
+            try {
+                const response = await fetch('{{ request.url_for("delete_task", task_id="__ID__") }}'.replace('__ID__', taskId), {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.scheduler_task_deleted, true);
+                    loadTasks();
+                } else {
+                    showToast(data.error || translations.scheduler_error, false);
+                }
+            } catch (error) {
+                showToast(translations.scheduler_error, false);
+            }
+        }
     </script>
 </body>
 </html>

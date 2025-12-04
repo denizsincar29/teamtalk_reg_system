@@ -14,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 
 from .i18n import DEFAULT_LANGUAGE, LANGUAGES, get_translations
 from .manager import tt_manager
+from .scheduler import task_scheduler, TaskType
 
 router = APIRouter(prefix="/admin")
 
@@ -421,6 +422,155 @@ async def leave_channel(request: Request) -> JSONResponse:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
     success, error = await tt_manager.leave_channel()
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
+# Scheduler routes
+
+@router.get("/api/tasks")
+async def get_tasks(request: Request) -> JSONResponse:
+    """Get all scheduled tasks."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    tasks = await task_scheduler.get_tasks()
+    return JSONResponse({"tasks": tasks})
+
+
+@router.post("/api/tasks")
+async def create_task(
+    request: Request,
+    task_type: str = Form(...),
+    name: str = Form(...),
+    message: str = Form(""),
+    channel_id: int = Form(0),
+    scheduled_time: str = Form(""),
+    recurring_minutes: int = Form(0)
+) -> JSONResponse:
+    """Create a new scheduled task."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    # Validate task type
+    if task_type not in [TaskType.BROADCAST, TaskType.CHANNEL_MESSAGE, TaskType.CREATE_CHANNEL]:
+        return JSONResponse({"error": "Invalid task type"}, status_code=400)
+    
+    # Parse scheduled time
+    parsed_time = None
+    if scheduled_time:
+        try:
+            parsed_time = datetime.fromisoformat(scheduled_time)
+        except ValueError:
+            return JSONResponse({"error": "Invalid scheduled time format"}, status_code=400)
+    
+    # At least one of scheduled_time or recurring_minutes must be set
+    if not parsed_time and recurring_minutes <= 0:
+        return JSONResponse({"error": "Must specify either scheduled time or recurring interval"}, status_code=400)
+    
+    task_id = await task_scheduler.add_task(
+        task_type=task_type,
+        name=name,
+        message=message,
+        channel_id=channel_id,
+        scheduled_time=parsed_time,
+        recurring_minutes=recurring_minutes
+    )
+    
+    return JSONResponse({"success": True, "task_id": task_id})
+
+
+@router.put("/api/tasks/{task_id}")
+async def update_task(
+    request: Request,
+    task_id: str,
+    name: str = Form(None),
+    message: str = Form(None),
+    channel_id: int = Form(None),
+    scheduled_time: str = Form(None),
+    recurring_minutes: int = Form(None),
+    enabled: bool = Form(None)
+) -> JSONResponse:
+    """Update an existing task."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    updates = {}
+    if name is not None:
+        updates["name"] = name
+    if message is not None:
+        updates["message"] = message
+    if channel_id is not None:
+        updates["channel_id"] = channel_id
+    if scheduled_time is not None:
+        if scheduled_time:
+            try:
+                updates["scheduled_time"] = datetime.fromisoformat(scheduled_time)
+            except ValueError:
+                return JSONResponse({"error": "Invalid scheduled time format"}, status_code=400)
+        else:
+            updates["scheduled_time"] = None
+    if recurring_minutes is not None:
+        updates["recurring_minutes"] = recurring_minutes
+    if enabled is not None:
+        updates["enabled"] = enabled
+    
+    success = await task_scheduler.update_task(task_id, **updates)
+    
+    if not success:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    
+    return JSONResponse({"success": True})
+
+
+@router.delete("/api/tasks/{task_id}")
+async def delete_task(request: Request, task_id: str) -> JSONResponse:
+    """Delete a scheduled task."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success = await task_scheduler.delete_task(task_id)
+    
+    if not success:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/tasks/{task_id}/toggle")
+async def toggle_task(request: Request, task_id: str) -> JSONResponse:
+    """Toggle a task's enabled state."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success = await task_scheduler.toggle_task(task_id)
+    
+    if not success:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/tasks/{task_id}/run")
+async def run_task_now(request: Request, task_id: str) -> JSONResponse:
+    """Run a task immediately."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    task = await task_scheduler.get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "Task not found"}, status_code=404)
+    
+    success, error = await task_scheduler.execute_task(task)
     
     if not success:
         return JSONResponse({"error": str(error)}, status_code=500)
