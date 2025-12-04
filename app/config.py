@@ -38,7 +38,7 @@ SERVER_CONFIG = {
 USE_LOCALHOST_FOR_BOT = os.environ.get("USE_LOCALHOST_FOR_BOT", "false").lower() in ("true", "1", "yes")
 
 # Channel ID for the bot to join (0 = don't join any channel, 1 = root channel)
-BOT_JOIN_CHANNEL_ID = int(os.environ.get("BOT_JOIN_CHANNEL_ID", "1"))
+BOT_JOIN_CHANNEL_ID = int(os.environ.get("BOT_JOIN_CHANNEL_ID", "0"))
 
 # Bot-specific server configuration (uses localhost if USE_LOCALHOST_FOR_BOT is true)
 BOT_SERVER_CONFIG = {

@@ -459,6 +459,82 @@
         .connection-dot.disconnected {
             background: #dc3545;
         }
+        
+        /* Channels list */
+        .channels-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .channel-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            background: white;
+            margin-bottom: 2px;
+            border-radius: 4px;
+        }
+        
+        .channel-item.current {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .channel-item.has-password {
+            opacity: 0.7;
+        }
+        
+        .channel-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .channel-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .channel-lock {
+            font-size: 12px;
+        }
+        
+        .channel-btn {
+            padding: 3px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .channel-btn.join {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .channel-btn.leave {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .channel-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .channel-current-badge {
+            font-size: 10px;
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -485,6 +561,7 @@
             <div class="sidebar-section">
                 <div class="tabs">
                     <button class="tab-btn active" onclick="showSidebarTab('online')">{{ t.tab_online }}</button>
+                    <button class="tab-btn" onclick="showSidebarTab('channels')">{{ t.channels_header }}</button>
                     <button class="tab-btn" onclick="showSidebarTab('accounts')">{{ t.tab_accounts }}</button>
                 </div>
                 
@@ -492,6 +569,12 @@
                     <ul class="user-list" id="online-users-list">
                         <li class="user-item loading">Loading...</li>
                     </ul>
+                </div>
+                
+                <div id="channels-tab" class="tab-content">
+                    <div class="channels-list" id="channels-list">
+                        <div class="loading">Loading...</div>
+                    </div>
                 </div>
                 
                 <div id="accounts-tab" class="tab-content">
@@ -556,13 +639,23 @@
             channel_msg_success: "{{ t.messages_reply_success }}",
             channel_msg_error: "{{ t.messages_reply_error }}",
             messages_private: "{{ t.messages_private }}",
-            sound_enabled: "{{ t.messages_sound_enabled }}"
+            messages_broadcast: "{{ t.messages_broadcast }}",
+            sound_enabled: "{{ t.messages_sound_enabled }}",
+            channels_join_success: "{{ t.channels_join_success }}",
+            channels_join_error: "{{ t.channels_join_error }}",
+            channels_leave_success: "{{ t.channels_leave_success }}",
+            channels_leave_error: "{{ t.channels_leave_error }}",
+            channels_join: "{{ t.channels_join }}",
+            channels_leave: "{{ t.channels_leave }}",
+            channels_current: "{{ t.channels_current }}"
         };
         
         // State
         let audioContext = null;
         let soundEnabled = false;
         let onlineUsers = [];
+        let channels = [];
+        let currentChannelId = 0;
         let lastMessageCount = 0;
         let eventSource = null;
         let selectedMentionIndex = 0;
@@ -664,6 +757,124 @@
             
             if (tabName === 'accounts') loadAccounts();
             if (tabName === 'online') loadOnlineUsers();
+            if (tabName === 'channels') loadChannels();
+        }
+        
+        // Load channels
+        async function loadChannels() {
+            try {
+                const response = await fetch('{{ request.url_for("get_channels") }}');
+                const data = await response.json();
+                
+                if (data.channels) {
+                    channels = data.channels;
+                    currentChannelId = data.current_channel || 0;
+                    const list = document.getElementById('channels-list');
+                    list.innerHTML = '';
+                    
+                    if (data.channels.length === 0) {
+                        list.innerHTML = '<div class="channel-item">No channels available</div>';
+                        return;
+                    }
+                    
+                    // Build tree structure (parent_id = 0 is root)
+                    const sortedChannels = data.channels.sort((a, b) => a.id - b.id);
+                    
+                    sortedChannels.forEach(channel => {
+                        const div = document.createElement('div');
+                        const isCurrent = channel.id === currentChannelId;
+                        div.className = 'channel-item' + (isCurrent ? ' current' : '') + (channel.has_password ? ' has-password' : '');
+                        
+                        const info = document.createElement('div');
+                        info.className = 'channel-info';
+                        
+                        if (channel.has_password) {
+                            const lock = document.createElement('span');
+                            lock.className = 'channel-lock';
+                            lock.textContent = '🔒';
+                            info.appendChild(lock);
+                        }
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'channel-name';
+                        nameSpan.textContent = channel.name || channel.path || 'Channel ' + channel.id;
+                        nameSpan.title = channel.path || '';
+                        info.appendChild(nameSpan);
+                        
+                        div.appendChild(info);
+                        
+                        // Don't show join button for password-protected channels
+                        if (!channel.has_password) {
+                            if (isCurrent) {
+                                const badge = document.createElement('span');
+                                badge.className = 'channel-current-badge';
+                                badge.textContent = translations.channels_current;
+                                div.appendChild(badge);
+                                
+                                const leaveBtn = document.createElement('button');
+                                leaveBtn.className = 'channel-btn leave';
+                                leaveBtn.textContent = translations.channels_leave;
+                                leaveBtn.onclick = () => leaveChannel();
+                                div.appendChild(leaveBtn);
+                            } else {
+                                const joinBtn = document.createElement('button');
+                                joinBtn.className = 'channel-btn join';
+                                joinBtn.textContent = translations.channels_join;
+                                joinBtn.onclick = () => joinChannel(channel.id);
+                                div.appendChild(joinBtn);
+                            }
+                        }
+                        
+                        list.appendChild(div);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading channels:', error);
+            }
+        }
+        
+        // Join channel
+        async function joinChannel(channelId) {
+            try {
+                const formData = new FormData();
+                formData.append('channel_id', channelId);
+                
+                const response = await fetch('{{ request.url_for("join_channel") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.channels_join_success, true);
+                    loadChannels();
+                } else {
+                    showToast(data.error || translations.channels_join_error, false);
+                }
+            } catch (error) {
+                showToast(translations.channels_join_error, false);
+            }
+        }
+        
+        // Leave channel
+        async function leaveChannel() {
+            try {
+                const response = await fetch('{{ request.url_for("leave_channel") }}', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.channels_leave_success, true);
+                    loadChannels();
+                } else {
+                    showToast(data.error || translations.channels_leave_error, false);
+                }
+            } catch (error) {
+                showToast(translations.channels_leave_error, false);
+            }
         }
         
         // Load online users
@@ -821,20 +1032,46 @@
         // Show mention suggestions
         function showMentionSuggestions(searchText) {
             const container = document.getElementById('mention-suggestions');
-            const filtered = onlineUsers.filter(user => 
+            
+            // Filter users
+            let filtered = onlineUsers.filter(user => 
                 (user.username && user.username.toLowerCase().includes(searchText)) ||
                 (user.nickname && user.nickname.toLowerCase().includes(searchText))
             );
             
-            if (filtered.length === 0) {
+            // Add @all option if it matches
+            const allMatches = 'all'.includes(searchText.toLowerCase());
+            
+            if (filtered.length === 0 && !allMatches) {
                 hideMentionSuggestions();
                 return;
             }
             
             container.innerHTML = '';
-            filtered.slice(0, 5).forEach((user, index) => {
+            
+            // Add @all option first if it matches
+            if (allMatches) {
+                const allDiv = document.createElement('div');
+                allDiv.className = 'mention-item' + (selectedMentionIndex === 0 ? ' selected' : '');
+                allDiv.innerHTML = '<span class="username">@all</span><span class="nickname">(Broadcast to all users)</span>';
+                allDiv.onclick = () => {
+                    const input = document.getElementById('message-input');
+                    const value = input.value;
+                    const cursorPos = input.selectionStart;
+                    const textBeforeCursor = value.substring(0, cursorPos);
+                    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+                    input.value = value.substring(0, lastAtIndex) + '@all ' + value.substring(cursorPos);
+                    input.focus();
+                    hideMentionSuggestions();
+                };
+                container.appendChild(allDiv);
+            }
+            
+            // Add user suggestions
+            const startIndex = allMatches ? 1 : 0;
+            filtered.slice(0, allMatches ? 4 : 5).forEach((user, index) => {
                 const div = document.createElement('div');
-                div.className = 'mention-item' + (index === selectedMentionIndex ? ' selected' : '');
+                div.className = 'mention-item' + ((index + startIndex) === selectedMentionIndex ? ' selected' : '');
                 div.innerHTML = '<span class="username">@' + escapeHtml(user.username) + '</span>' +
                                (user.nickname ? '<span class="nickname">(' + escapeHtml(user.nickname) + ')</span>' : '');
                 div.onclick = () => selectMention(user);
@@ -883,7 +1120,7 @@
             
             if (!message) return;
             
-            // Check if it's a private message (@username message)
+            // Check if it's a private message (@username message) or broadcast (@all message)
             const pmMatch = message.match(/^@(\S+)\s+(.+)/);
             
             try {
@@ -891,27 +1128,37 @@
                 const formData = new FormData();
                 
                 if (pmMatch) {
-                    // Private message
                     const targetUsername = pmMatch[1];
                     const pmContent = pmMatch[2];
                     
-                    // Find user ID from username
-                    const targetUser = onlineUsers.find(u => 
-                        u.username.toLowerCase() === targetUsername.toLowerCase()
-                    );
-                    
-                    if (!targetUser) {
-                        showToast('User not found online: ' + targetUsername, false);
-                        return;
+                    // Check for broadcast
+                    if (targetUsername.toLowerCase() === 'all') {
+                        // Broadcast message
+                        formData.append('message', pmContent);
+                        
+                        response = await fetch('{{ request.url_for("send_broadcast_message") }}', {
+                            method: 'POST',
+                            body: formData
+                        });
+                    } else {
+                        // Private message - find user ID from username
+                        const targetUser = onlineUsers.find(u => 
+                            u.username.toLowerCase() === targetUsername.toLowerCase()
+                        );
+                        
+                        if (!targetUser) {
+                            showToast('User not found online: ' + targetUsername, false);
+                            return;
+                        }
+                        
+                        formData.append('user_id', targetUser.id);
+                        formData.append('message', pmContent);
+                        
+                        response = await fetch('{{ request.url_for("send_private_message") }}', {
+                            method: 'POST',
+                            body: formData
+                        });
                     }
-                    
-                    formData.append('user_id', targetUser.id);
-                    formData.append('message', pmContent);
-                    
-                    response = await fetch('{{ request.url_for("send_private_message") }}', {
-                        method: 'POST',
-                        body: formData
-                    });
                 } else {
                     // Channel message
                     formData.append('message', message);

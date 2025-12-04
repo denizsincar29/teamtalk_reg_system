@@ -287,6 +287,128 @@ class TeamTalkManager:
                     self.response_queue.get_nowait()
                     return
     
+    async def send_broadcast_message(self, message: str) -> tuple[bool, str | None]:
+        """Send a broadcast message to all users on the server.
+        
+        Args:
+            message: The message to broadcast.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "send_broadcast_message",
+                "message": message
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def get_channels(self) -> list[dict[str, Any]]:
+        """Get list of all channels on the server.
+        
+        Returns:
+            A list of channel dictionaries with id, name, path, has_password, parent_id.
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return []
+            
+            self.request_queue.put({"action": "get_channels"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("channels", [])
+            
+            return []
+    
+    async def join_channel(self, channel_id: int) -> tuple[bool, str | None]:
+        """Make the bot join a channel.
+        
+        Args:
+            channel_id: The ID of the channel to join.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "join_channel",
+                "channel_id": channel_id
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def leave_channel(self) -> tuple[bool, str | None]:
+        """Make the bot leave its current channel.
+        
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({"action": "leave_channel"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def get_current_channel(self) -> int:
+        """Get the ID of the channel the bot is currently in.
+        
+        Returns:
+            Channel ID, or 0 if not in a channel.
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return 0
+            
+            self.request_queue.put({"action": "get_current_channel"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("channel_id", 0)
+            
+            return 0
+    
     def stop(self) -> None:
         """Stop the TeamTalk worker process."""
         if self.request_queue is not None:

@@ -253,6 +253,73 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                         channel_messages.clear()
                         response_queue.put({"success": True})
                     
+                    elif action == "send_broadcast_message":
+                        message = request.get("message")
+                        try:
+                            if server is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            server.send_message(message)
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            response_queue.put({"success": False, "error": str(e)})
+                    
+                    elif action == "get_channels":
+                        try:
+                            if server is None:
+                                response_queue.put({"channels": [], "error": "Not connected"})
+                                continue
+                            channels = server.get_channels()
+                            channels_list = []
+                            for ch in channels:
+                                try:
+                                    has_password = bool(ch._channel.bPassword) if hasattr(ch._channel, 'bPassword') else False
+                                    parent_id = ch._channel.nParentID if hasattr(ch._channel, 'nParentID') else 0
+                                    channels_list.append({
+                                        "id": ch.id,
+                                        "name": str(ch.name) if hasattr(ch, 'name') else "",
+                                        "path": str(ch.path) if hasattr(ch, 'path') else "",
+                                        "has_password": has_password,
+                                        "parent_id": parent_id,
+                                        "max_users": ch.max_users if hasattr(ch, 'max_users') else 0
+                                    })
+                                except Exception:
+                                    continue
+                            response_queue.put({"channels": channels_list})
+                        except Exception as e:
+                            response_queue.put({"channels": [], "error": str(e)})
+                    
+                    elif action == "join_channel":
+                        channel_id = request.get("channel_id")
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            instance.join_channel_by_id(channel_id, "")
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            response_queue.put({"success": False, "error": str(e)})
+                    
+                    elif action == "leave_channel":
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            instance.leave_channel()
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            response_queue.put({"success": False, "error": str(e)})
+                    
+                    elif action == "get_current_channel":
+                        try:
+                            if instance is None:
+                                response_queue.put({"channel_id": 0, "error": "Not connected"})
+                                continue
+                            channel_id = instance.getMyChannelID()
+                            response_queue.put({"channel_id": channel_id})
+                        except Exception as e:
+                            response_queue.put({"channel_id": 0, "error": str(e)})
+                    
                     elif action == "shutdown":
                         break
             except Exception:

@@ -311,3 +311,71 @@ async def stream_messages(request: Request) -> StreamingResponse:
             "X-Accel-Buffering": "no"
         }
     )
+
+
+@router.post("/api/broadcast")
+async def send_broadcast_message(
+    request: Request,
+    message: str = Form(...)
+) -> JSONResponse:
+    """Send a broadcast message to all users on the server."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    message = message.strip()
+    if not message:
+        return JSONResponse({"error": "Message cannot be empty"}, status_code=400)
+    
+    success, error = await tt_manager.send_broadcast_message(message)
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
+@router.get("/api/channels")
+async def get_channels(request: Request) -> JSONResponse:
+    """Get list of all channels on the server."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    channels = await tt_manager.get_channels()
+    current_channel = await tt_manager.get_current_channel()
+    
+    return JSONResponse({"channels": channels, "current_channel": current_channel})
+
+
+@router.post("/api/channels/join")
+async def join_channel(
+    request: Request,
+    channel_id: int = Form(...)
+) -> JSONResponse:
+    """Make the bot join a channel."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success, error = await tt_manager.join_channel(channel_id)
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/channels/leave")
+async def leave_channel(request: Request) -> JSONResponse:
+    """Make the bot leave its current channel."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success, error = await tt_manager.leave_channel()
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
