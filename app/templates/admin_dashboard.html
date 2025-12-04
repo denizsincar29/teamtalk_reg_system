@@ -632,6 +632,24 @@
     <!-- Toast notification -->
     <div id="toast" class="toast"></div>
     
+    <!-- Screenreader announcements (ARIA live region) -->
+    <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true" role="status"></div>
+    
+    <style>
+        /* Screenreader only - visually hidden but accessible */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    </style>
+    
     <script>
         const translations = {
             pm_sent_success: "{{ t.pm_sent_success }}",
@@ -647,7 +665,16 @@
             channels_leave_error: "{{ t.channels_leave_error }}",
             channels_join: "{{ t.channels_join }}",
             channels_leave: "{{ t.channels_leave }}",
-            channels_current: "{{ t.channels_current }}"
+            channels_current: "{{ t.channels_current }}",
+            // Event translations
+            event_user_login: "{{ t.event_user_login }}",
+            event_user_logout: "{{ t.event_user_logout }}",
+            event_user_join_channel: "{{ t.event_user_join_channel }}",
+            event_user_left_channel: "{{ t.event_user_left_channel }}",
+            event_channel_new: "{{ t.event_channel_new }}",
+            event_channel_delete: "{{ t.event_channel_delete }}",
+            event_bot_connected: "{{ t.event_bot_connected }}",
+            event_connection_lost: "{{ t.event_connection_lost }}"
         };
         
         // State
@@ -657,6 +684,7 @@
         let channels = [];
         let currentChannelId = 0;
         let lastMessageCount = 0;
+        let lastEventCount = 0;
         let eventSource = null;
         let selectedMentionIndex = 0;
         
@@ -737,6 +765,185 @@
                     osc.stop(now + i * 0.15 + 0.35);
                 });
             } catch (e) {}
+        }
+        
+        // User login notification - welcoming ascending chime
+        function playUserLoginNotification() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                // C5 -> E5 -> G5 major chord ascending (welcoming)
+                const notes = [523.25, 659.25, 783.99];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                    gain.gain.setValueAtTime(0, now + i * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.15, now + i * 0.08 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.25);
+                });
+            } catch (e) {}
+        }
+        
+        // User logout notification - descending minor tone
+        function playUserLogoutNotification() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                // G5 -> E5 -> C5 descending (farewell)
+                const notes = [783.99, 659.25, 523.25];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
+                    gain.gain.setValueAtTime(0, now + i * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.12, now + i * 0.1 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.2);
+                });
+            } catch (e) {}
+        }
+        
+        // User joined channel - short double beep
+        function playUserJoinChannelNotification() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                // Two quick beeps at E5
+                const notes = [659.25, 659.25];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.12);
+                    gain.gain.setValueAtTime(0, now + i * 0.12);
+                    gain.gain.linearRampToValueAtTime(0.08, now + i * 0.12 + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.08);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.12);
+                    osc.stop(now + i * 0.12 + 0.08);
+                });
+            } catch (e) {}
+        }
+        
+        // User left channel - single low beep
+        function playUserLeftChannelNotification() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                // Single low beep at C4
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(261.63, now);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.08, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } catch (e) {}
+        }
+        
+        // Announce to screenreader
+        function announceToScreenReader(message) {
+            const announcer = document.getElementById('sr-announcements');
+            if (announcer) {
+                // Clear first to ensure the change is detected
+                announcer.textContent = '';
+                // Set the new message after a brief delay
+                setTimeout(() => {
+                    announcer.textContent = message;
+                }, 50);
+            }
+        }
+        
+        // Format event message for display and screenreader
+        function formatEventMessage(event) {
+            const nickname = event.nickname || event.username || 'Unknown';
+            const channel = event.channel || '';
+            
+            switch (event.type) {
+                case 'user_login':
+                    return translations.event_user_login.replace('{nickname}', nickname);
+                case 'user_logout':
+                    return translations.event_user_logout.replace('{nickname}', nickname);
+                case 'user_join_channel':
+                    return translations.event_user_join_channel.replace('{nickname}', nickname).replace('{channel}', channel);
+                case 'user_left_channel':
+                    return translations.event_user_left_channel.replace('{nickname}', nickname).replace('{channel}', channel);
+                case 'channel_new':
+                    return translations.event_channel_new.replace('{channel}', channel);
+                case 'channel_delete':
+                    return translations.event_channel_delete.replace('{channel}', channel);
+                case 'bot_connected':
+                    return translations.event_bot_connected;
+                case 'connection_lost':
+                    return translations.event_connection_lost;
+                default:
+                    return event.type;
+            }
+        }
+        
+        // Play sound and announce event
+        function handleEvent(event) {
+            const message = formatEventMessage(event);
+            
+            // Announce to screenreader
+            announceToScreenReader(message);
+            
+            // Play appropriate sound
+            switch (event.type) {
+                case 'user_login':
+                    playUserLoginNotification();
+                    break;
+                case 'user_logout':
+                    playUserLogoutNotification();
+                    break;
+                case 'user_join_channel':
+                    playUserJoinChannelNotification();
+                    break;
+                case 'user_left_channel':
+                    playUserLeftChannelNotification();
+                    break;
+                case 'channel_new':
+                case 'channel_delete':
+                    playChannelNotification();
+                    break;
+                case 'bot_connected':
+                    playUserLoginNotification();
+                    break;
+                case 'connection_lost':
+                    playUserLogoutNotification();
+                    break;
+            }
         }
         
         // Show toast notification
@@ -1158,13 +1365,43 @@
                         });
                     }
                 } else {
-                    // Channel message
+                    // Try channel message first, if bot is not in channel, use broadcast
                     formData.append('message', message);
                     
                     response = await fetch('{{ request.url_for("send_channel_message") }}', {
                         method: 'POST',
                         body: formData
                     });
+                    
+                    const data = await response.json();
+                    
+                    // If channel message failed because bot is not in channel, use broadcast
+                    if (!data.success && data.error && data.error.includes('not in a channel')) {
+                        const broadcastFormData = new FormData();
+                        broadcastFormData.append('message', message);
+                        
+                        response = await fetch('{{ request.url_for("send_broadcast_message") }}', {
+                            method: 'POST',
+                            body: broadcastFormData
+                        });
+                        
+                        const broadcastData = await response.json();
+                        if (broadcastData.success) {
+                            input.value = '';
+                            showToast(translations.channel_msg_success + ' (broadcast)', true);
+                        } else {
+                            showToast(broadcastData.error || translations.channel_msg_error, false);
+                        }
+                        return;
+                    }
+                    
+                    if (data.success) {
+                        input.value = '';
+                        showToast(translations.channel_msg_success, true);
+                    } else {
+                        showToast(data.error || translations.channel_msg_error, false);
+                    }
+                    return;
                 }
                 
                 const data = await response.json();
@@ -1206,6 +1443,8 @@
             eventSource.onmessage = function(event) {
                 try {
                     const data = JSON.parse(event.data);
+                    
+                    // Process messages
                     if (data.messages) {
                         // Check for new messages to play notification
                         if (data.messages.length > lastMessageCount && lastMessageCount > 0) {
@@ -1214,13 +1453,29 @@
                             newMessages.forEach(msg => {
                                 if (msg.type === 'private') {
                                     playPrivateNotification();
+                                    announceToScreenReader(translations.messages_private + ': ' + msg.from_user + ': ' + msg.content);
                                 } else {
                                     playChannelNotification();
+                                    announceToScreenReader(msg.from_user + ': ' + msg.content);
                                 }
                             });
                         }
                         lastMessageCount = data.messages.length;
                         renderMessages(data.messages);
+                    }
+                    
+                    // Process events
+                    if (data.events) {
+                        // Check for new events
+                        if (data.events.length > lastEventCount && lastEventCount > 0) {
+                            const newEvents = data.events.slice(lastEventCount);
+                            newEvents.forEach(evt => {
+                                handleEvent(evt);
+                            });
+                            // Also refresh online users list when user events happen
+                            loadOnlineUsers();
+                        }
+                        lastEventCount = data.events.length;
                     }
                 } catch (e) {
                     console.error('Error parsing message:', e);

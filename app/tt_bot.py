@@ -8,6 +8,8 @@ from typing import Any
 
 import pytalk
 from pytalk import enums, Permission, message as tt_message
+from pytalk import channel as tt_channel
+from pytalk import user as tt_user
 
 from .config import BOT_SERVER_CONFIG
 
@@ -31,6 +33,9 @@ DEFAULT_USER_RIGHTS = (
 # Maximum number of channel messages to store
 MAX_CHANNEL_MESSAGES = 100
 
+# Maximum number of events to store
+MAX_EVENTS = 100
+
 
 def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
     """Worker function that runs in a separate process to handle TeamTalk operations.
@@ -47,6 +52,8 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
     }
     # Store channel messages in a deque with max size
     channel_messages: deque[dict[str, Any]] = deque(maxlen=MAX_CHANNEL_MESSAGES)
+    # Store events in a deque with max size
+    events: deque[dict[str, Any]] = deque(maxlen=MAX_EVENTS)
 
     async def process_requests() -> None:
         """Process incoming requests from the queue."""
@@ -334,6 +341,13 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                         except Exception as e:
                             response_queue.put({"channel_id": 0, "error": str(e)})
                     
+                    elif action == "get_events":
+                        response_queue.put({"events": list(events)})
+                    
+                    elif action == "clear_events":
+                        events.clear()
+                        response_queue.put({"success": True})
+                    
                     elif action == "shutdown":
                         break
             except Exception:
@@ -361,6 +375,113 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
             sys.exit(1)
         
         instance_holder["ready"] = True
+        
+        # Add event for bot login
+        events.append({
+            "type": "bot_connected",
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    @bot.event
+    async def on_user_login(user: tt_user.User) -> None:
+        """Handle user login to server."""
+        try:
+            username = str(user.username) if hasattr(user, 'username') else ""
+            nickname = str(user.nickname) if hasattr(user, 'nickname') else username
+            events.append({
+                "type": "user_login",
+                "username": username,
+                "nickname": nickname,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_user_logout(user: tt_user.User) -> None:
+        """Handle user logout from server."""
+        try:
+            username = str(user.username) if hasattr(user, 'username') else ""
+            nickname = str(user.nickname) if hasattr(user, 'nickname') else username
+            events.append({
+                "type": "user_logout",
+                "username": username,
+                "nickname": nickname,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_user_join(user: tt_user.User, channel: tt_channel.Channel) -> None:
+        """Handle user joining a channel."""
+        try:
+            username = str(user.username) if hasattr(user, 'username') else ""
+            nickname = str(user.nickname) if hasattr(user, 'nickname') else username
+            channel_name = str(channel.name) if hasattr(channel, 'name') else ""
+            events.append({
+                "type": "user_join_channel",
+                "username": username,
+                "nickname": nickname,
+                "channel": channel_name,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_user_left(user: tt_user.User, channel: tt_channel.Channel) -> None:
+        """Handle user leaving a channel."""
+        try:
+            username = str(user.username) if hasattr(user, 'username') else ""
+            nickname = str(user.nickname) if hasattr(user, 'nickname') else username
+            channel_name = str(channel.name) if hasattr(channel, 'name') else ""
+            events.append({
+                "type": "user_left_channel",
+                "username": username,
+                "nickname": nickname,
+                "channel": channel_name,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_channel_new(channel: tt_channel.Channel) -> None:
+        """Handle new channel creation."""
+        try:
+            channel_name = str(channel.name) if hasattr(channel, 'name') else ""
+            events.append({
+                "type": "channel_new",
+                "channel": channel_name,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_channel_delete(channel: tt_channel.Channel) -> None:
+        """Handle channel deletion."""
+        try:
+            channel_name = str(channel.name) if hasattr(channel, 'name') else ""
+            events.append({
+                "type": "channel_delete",
+                "channel": channel_name,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_my_connection_lost(instance: Any) -> None:
+        """Handle connection lost."""
+        try:
+            events.append({
+                "type": "connection_lost",
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception:
+            pass
 
     @bot.event
     async def on_message(msg: tt_message.Message) -> None:

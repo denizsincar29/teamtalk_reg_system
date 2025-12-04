@@ -409,6 +409,44 @@ class TeamTalkManager:
             
             return 0
     
+    async def get_events(self) -> list[dict[str, Any]]:
+        """Get events collected by the bot.
+        
+        Returns:
+            A list of event dictionaries.
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return []
+            
+            self.request_queue.put({"action": "get_events"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("events", [])
+            
+            return []
+    
+    async def clear_events(self) -> None:
+        """Clear all collected events."""
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return
+            
+            self.request_queue.put({"action": "clear_events"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    self.response_queue.get_nowait()
+                    return
+    
     def stop(self) -> None:
         """Stop the TeamTalk worker process."""
         if self.request_queue is not None:
