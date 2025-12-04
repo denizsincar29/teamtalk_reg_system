@@ -272,10 +272,12 @@ async def clear_channel_messages(request: Request) -> JSONResponse:
     return JSONResponse({"success": True})
 
 
-async def message_event_generator(request: Request) -> AsyncGenerator[str, None]:
-    """Generate SSE events for message updates."""
-    last_count = 0
+async def message_and_event_generator(request: Request) -> AsyncGenerator[str, None]:
+    """Generate SSE events for message and event updates."""
+    last_msg_count = 0
     last_messages: list[dict[str, Any]] = []
+    last_event_count = 0
+    last_events: list[dict[str, Any]] = []
     
     while True:
         # Check if client disconnected
@@ -283,13 +285,19 @@ async def message_event_generator(request: Request) -> AsyncGenerator[str, None]
             break
         
         messages = await tt_manager.get_channel_messages()
+        events = await tt_manager.get_events()
         
-        # Check for new messages
-        if len(messages) != last_count or messages != last_messages:
-            # Send the new messages
-            yield f"data: {json.dumps({'messages': messages})}\n\n"
-            last_count = len(messages)
+        # Check for new messages or events
+        msgs_changed = len(messages) != last_msg_count or messages != last_messages
+        events_changed = len(events) != last_event_count or events != last_events
+        
+        if msgs_changed or events_changed:
+            # Send combined data
+            yield f"data: {json.dumps({'messages': messages, 'events': events})}\n\n"
+            last_msg_count = len(messages)
             last_messages = messages.copy() if messages else []
+            last_event_count = len(events)
+            last_events = events.copy() if events else []
         
         # Wait a bit before checking again (500ms for responsive updates)
         await asyncio.sleep(0.5)
@@ -297,13 +305,13 @@ async def message_event_generator(request: Request) -> AsyncGenerator[str, None]
 
 @router.get("/api/messages/stream")
 async def stream_messages(request: Request) -> StreamingResponse:
-    """Stream messages using Server-Sent Events."""
+    """Stream messages and events using Server-Sent Events."""
     token = get_session_token(request)
     if not validate_session(token):
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
     return StreamingResponse(
-        message_event_generator(request),
+        message_and_event_generator(request),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -311,6 +319,30 @@ async def stream_messages(request: Request) -> StreamingResponse:
             "X-Accel-Buffering": "no"
         }
     )
+
+
+@router.get("/api/events")
+async def get_events(request: Request) -> JSONResponse:
+    """Get server events."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    events = await tt_manager.get_events()
+    
+    return JSONResponse({"events": events})
+
+
+@router.post("/api/events/clear")
+async def clear_events(request: Request) -> JSONResponse:
+    """Clear server events."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    await tt_manager.clear_events()
+    
+    return JSONResponse({"success": True})
 
 
 @router.post("/api/broadcast")

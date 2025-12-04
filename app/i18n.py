@@ -111,6 +111,7 @@ TRANSLATIONS = {
         "messages_reply_error": "Failed to send message.",
         "messages_private": "Private",
         "messages_broadcast": "Broadcast",
+        "messages_sent_as_broadcast": "Message sent! (broadcast)",
         "messages_enable_sound": "🔔 Click to enable notification sounds",
         "messages_sound_enabled": "Notification sounds enabled",
         
@@ -126,6 +127,18 @@ TRANSLATIONS = {
         "channels_join_error": "Failed to join channel.",
         "channels_leave_success": "Left channel!",
         "channels_leave_error": "Failed to leave channel.",
+        
+        # Events
+        "event_user_login": "{nickname} connected to server",
+        "event_user_logout": "{nickname} disconnected from server",
+        "event_user_join_channel": "{nickname} joined {channel}",
+        "event_user_left_channel": "{nickname} left {channel}",
+        "event_channel_new": "Channel {channel} created",
+        "event_channel_delete": "Channel {channel} deleted",
+        "event_bot_connected": "Bot connected to server",
+        "event_connection_lost": "Connection to server lost",
+        "event_root_channel": "root channel",
+        "event_root_channel_genitive": "root channel",
         
         # Navigation
         "admin_back_to_registration": "← Back to Registration",
@@ -235,6 +248,7 @@ TRANSLATIONS = {
         "messages_reply_error": "Не удалось отправить сообщение.",
         "messages_private": "Личное",
         "messages_broadcast": "Рассылка",
+        "messages_sent_as_broadcast": "Сообщение отправлено! (рассылка)",
         "messages_enable_sound": "🔔 Нажмите для включения звуковых уведомлений",
         "messages_sound_enabled": "Звуковые уведомления включены",
         
@@ -250,6 +264,18 @@ TRANSLATIONS = {
         "channels_join_error": "Не удалось войти в канал.",
         "channels_leave_success": "Вышли из канала!",
         "channels_leave_error": "Не удалось выйти из канала.",
+        
+        # Events
+        "event_user_login": "{nickname} подключился к серверу",
+        "event_user_logout": "{nickname} отключился от сервера",
+        "event_user_join_channel": "{nickname} вошёл в {channel}",
+        "event_user_left_channel": "{nickname} вышел из {channel}",
+        "event_channel_new": "Канал {channel} создан",
+        "event_channel_delete": "Канал {channel} удалён",
+        "event_bot_connected": "Бот подключён к серверу",
+        "event_connection_lost": "Соединение с сервером потеряно",
+        "event_root_channel": "корневой канал",
+        "event_root_channel_genitive": "корневого канала",
         
         # Navigation
         "admin_back_to_registration": "← Вернуться к регистрации",
