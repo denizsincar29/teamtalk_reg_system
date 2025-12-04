@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import APP_HOST, APP_PORT, FORWARDED_ALLOW_IPS, PROXY_HEADERS, ROOT_PATH
 from app.manager import tt_manager
 from app.routes import router
+from app.admin_routes import router as admin_router
 
 
 @asynccontextmanager
@@ -35,6 +36,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 # Include routes
 app.include_router(router)
+app.include_router(admin_router)
 
 
 if __name__ == "__main__":
