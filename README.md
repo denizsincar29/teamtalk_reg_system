@@ -62,6 +62,7 @@ nano .env
 | `TEAMTALK_UDP_PORT` | `10333` | TeamTalk UDP port |
 | `TEAMTALK_USERNAME` | `bot` | Bot username for server connection |
 | `TEAMTALK_PASSWORD` | (required) | Bot password for server connection |
+| `TEAMTALK_NICKNAME` | (username) | Bot nickname (display name shown to other users) |
 | `USE_LOCALHOST_FOR_BOT` | `false` | If true, bot connects to localhost instead of TEAMTALK_HOST |
 | `APP_HOST` | `0.0.0.0` | Web server bind address (all IPs) |
 | `APP_PORT` | `8000` | Web server port |
