@@ -386,6 +386,79 @@
             channel_msg_error: "{{ t.messages_reply_error }}"
         };
         
+        // Track message counts to detect new messages
+        let lastMessageCount = 0;
+        let audioContext = null;
+        
+        // Initialize AudioContext on first user interaction
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        }
+        
+        // Play a beautiful notification sound using Web Audio API
+        function playNotificationSound() {
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                
+                const now = ctx.currentTime;
+                
+                // Create a pleasant two-tone chime
+                // First tone
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, now); // A5
+                gain1.gain.setValueAtTime(0, now);
+                gain1.gain.linearRampToValueAtTime(0.3, now + 0.02);
+                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+                
+                // Second tone (slightly delayed, higher pitch)
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1174.66, now + 0.1); // D6
+                gain2.gain.setValueAtTime(0, now + 0.1);
+                gain2.gain.linearRampToValueAtTime(0.25, now + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.1);
+                osc2.stop(now + 0.5);
+                
+                // Third tone for a nice trailing effect
+                const osc3 = ctx.createOscillator();
+                const gain3 = ctx.createGain();
+                osc3.type = 'sine';
+                osc3.frequency.setValueAtTime(1318.51, now + 0.2); // E6
+                gain3.gain.setValueAtTime(0, now + 0.2);
+                gain3.gain.linearRampToValueAtTime(0.15, now + 0.22);
+                gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc3.connect(gain3);
+                gain3.connect(ctx.destination);
+                osc3.start(now + 0.2);
+                osc3.stop(now + 0.6);
+                
+            } catch (e) {
+                console.log('Audio not available:', e);
+            }
+        }
+        
+        // Enable audio on first user interaction
+        document.addEventListener('click', function enableAudio() {
+            initAudioContext();
+            document.removeEventListener('click', enableAudio);
+        }, { once: true });
+        
         function showTab(tabName) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
@@ -555,6 +628,12 @@
                 loading.style.display = 'none';
                 
                 if (data.messages && data.messages.length > 0) {
+                    // Check if there are new messages and play notification sound
+                    if (data.messages.length > lastMessageCount && lastMessageCount > 0) {
+                        playNotificationSound();
+                    }
+                    lastMessageCount = data.messages.length;
+                    
                     tbody.innerHTML = '';
                     // Show messages in reverse order (newest first)
                     data.messages.slice().reverse().forEach(msg => {
@@ -682,8 +761,32 @@
             }
         }
         
-        // Load accounts on page load
-        document.addEventListener('DOMContentLoaded', loadAccounts);
+        // Auto-refresh messages every 5 seconds when on Messages tab
+        let messageRefreshInterval = null;
+        
+        function startMessageAutoRefresh() {
+            if (!messageRefreshInterval) {
+                messageRefreshInterval = setInterval(() => {
+                    const messagesTab = document.getElementById('messages-tab');
+                    if (messagesTab && messagesTab.classList.contains('active')) {
+                        loadMessages();
+                    }
+                }, 5000);
+            }
+        }
+        
+        function stopMessageAutoRefresh() {
+            if (messageRefreshInterval) {
+                clearInterval(messageRefreshInterval);
+                messageRefreshInterval = null;
+            }
+        }
+        
+        // Load accounts on page load and start auto-refresh for messages
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAccounts();
+            startMessageAutoRefresh();
+        });
     </script>
 </body>
 </html>
