@@ -212,7 +212,13 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                 response_queue.put({"success": False, "error": "Not connected"})
                                 continue
                             user = instance.get_user(user_id)
-                            await user.send_message(message)
+                            if user is None:
+                                response_queue.put({"success": False, "error": "User not found"})
+                                continue
+                            # send_message is an async coroutine
+                            result = user.send_message(message)
+                            if result is not None:
+                                await result
                             response_queue.put({"success": True})
                         except Exception as e:
                             response_queue.put({"success": False, "error": str(e)})

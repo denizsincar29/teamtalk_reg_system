@@ -142,7 +142,7 @@ async def admin_login(
     # Create session and redirect to dashboard
     token = create_session(username)
     response = RedirectResponse(
-        url=request.url_for("admin_home") + f"?lang={lang}",
+        url=str(request.url_for("admin_home")) + f"?lang={lang}",
         status_code=303
     )
     response.set_cookie(
@@ -164,7 +164,7 @@ async def admin_logout(request: Request, lang: str = Query(default=None)) -> Red
         destroy_session(token)
     
     response = RedirectResponse(
-        url=request.url_for("admin_home") + f"?lang={lang}",
+        url=str(request.url_for("admin_home")) + f"?lang={lang}",
         status_code=303
     )
     response.delete_cookie(key="admin_session")
