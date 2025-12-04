@@ -1054,6 +1054,7 @@
         let lastEventCount = 0;
         let eventSource = null;
         let selectedMentionIndex = 0;
+        let audioUnlocked = false;
         
         // Initialize AudioContext
         function initAudioContext() {
@@ -1061,6 +1062,56 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
             return audioContext;
+        }
+        
+        // Unlock audio context with a silent sound - must be called from user gesture
+        function unlockAudioContext() {
+            if (audioUnlocked) return;
+            
+            try {
+                const ctx = initAudioContext();
+                
+                // Resume if suspended
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                
+                // Play a silent sound to fully unlock the audio context
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                gainNode.gain.value = 0.001; // Nearly silent
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.001);
+                
+                audioUnlocked = true;
+                soundEnabled = true;
+                console.log('Audio context unlocked');
+            } catch (e) {
+                console.log('Could not unlock audio context:', e);
+            }
+        }
+        
+        // Attach audio unlock to common user interactions
+        function setupAudioUnlock() {
+            const unlockEvents = ['click', 'touchstart', 'touchend', 'keydown', 'mousedown'];
+            
+            const unlockHandler = () => {
+                unlockAudioContext();
+                // Remove listeners after first unlock to avoid overhead
+                if (audioUnlocked) {
+                    unlockEvents.forEach(event => {
+                        document.removeEventListener(event, unlockHandler, true);
+                    });
+                }
+            };
+            
+            unlockEvents.forEach(event => {
+                document.addEventListener(event, unlockHandler, true);
+            });
         }
         
         // Enable notifications (Web Notifications API)
@@ -1071,12 +1122,8 @@
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
                         notificationsEnabled = true;
-                        // Also enable sound
-                        const ctx = initAudioContext();
-                        if (ctx.state === 'suspended') {
-                            ctx.resume();
-                        }
-                        soundEnabled = true;
+                        // Also enable sound via unlock mechanism
+                        unlockAudioContext();
                         document.getElementById('sound-banner').classList.add('hidden');
                         showToast(translations.sound_enabled, true);
                         // Show a test notification (always shows to confirm it's working)
@@ -1142,11 +1189,7 @@
         // Enable sound on user interaction (fallback)
         function enableSound() {
             try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') {
-                    ctx.resume();
-                }
-                soundEnabled = true;
+                unlockAudioContext();  // Use the unlock function
                 document.getElementById('sound-banner').classList.add('hidden');
                 showToast(translations.sound_enabled, true);
                 // Play a test sound
@@ -2207,6 +2250,7 @@
             loadOnlineUsers();
             connectToStream();
             updateNotificationBanner();
+            setupAudioUnlock();  // Setup audio unlock on user interactions
             
             // Refresh online users periodically
             setInterval(loadOnlineUsers, 30000);
