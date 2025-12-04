@@ -28,8 +28,9 @@ templates = Jinja2Templates(directory=str(templates_dir))
 # Format: {session_token: {"username": str, "expires": datetime}}
 admin_sessions: dict[str, dict[str, Any]] = {}
 
-# Session expiry time
-SESSION_EXPIRY_HOURS = 8
+# Session expiry time - 30 days for PWA persistence
+SESSION_EXPIRY_DAYS = 30
+SESSION_EXPIRY_SECONDS = SESSION_EXPIRY_DAYS * 24 * 3600
 
 
 def get_lang(lang: str | None) -> str:
@@ -44,13 +45,16 @@ def create_session(username: str) -> str:
     token = secrets.token_urlsafe(32)
     admin_sessions[token] = {
         "username": username,
-        "expires": datetime.now() + timedelta(hours=SESSION_EXPIRY_HOURS)
+        "expires": datetime.now() + timedelta(days=SESSION_EXPIRY_DAYS)
     }
     return token
 
 
 def validate_session(token: str | None) -> str | None:
-    """Validate session token and return username if valid."""
+    """Validate session token and return username if valid.
+    
+    Also refreshes the session expiry time to extend the session.
+    """
     if not token:
         return None
     session = admin_sessions.get(token)
@@ -59,6 +63,8 @@ def validate_session(token: str | None) -> str | None:
     if datetime.now() > session["expires"]:
         del admin_sessions[token]
         return None
+    # Refresh the session expiry (sliding expiration)
+    session["expires"] = datetime.now() + timedelta(days=SESSION_EXPIRY_DAYS)
     return session["username"]
 
 
@@ -84,12 +90,21 @@ async def admin_home(request: Request, lang: str = Query(default=None)) -> HTMLR
     username = validate_session(token)
     
     if username:
-        return templates.TemplateResponse("admin_dashboard.html", {
+        response = templates.TemplateResponse("admin_dashboard.html", {
             "request": request,
             "lang": lang,
             "t": t,
             "username": html.escape(username)
         })
+        # Refresh the cookie to extend its expiry (sliding expiration)
+        response.set_cookie(
+            key="admin_session",
+            value=token,
+            httponly=True,
+            max_age=SESSION_EXPIRY_SECONDS,
+            samesite="lax"
+        )
+        return response
     
     return templates.TemplateResponse("admin_login.html", {
         "request": request,
@@ -151,7 +166,7 @@ async def admin_login(
         key="admin_session",
         value=token,
         httponly=True,
-        max_age=SESSION_EXPIRY_HOURS * 3600,
+        max_age=SESSION_EXPIRY_SECONDS,
         samesite="lax"
     )
     return response
