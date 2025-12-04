@@ -52,6 +52,61 @@ TRANSLATIONS = {
         "language": "Language",
         "english": "English",
         "russian": "Русский",
+        
+        # Admin panel
+        "admin_title": "Admin Panel - TeamTalk",
+        "admin_header": "Admin Panel",
+        "admin_login_header": "Admin Login",
+        "admin_login_button": "Login",
+        "admin_logout_button": "Logout",
+        "admin_login_error": "Invalid credentials or not an admin account.",
+        "admin_connecting": "Connecting to server...",
+        "admin_connection_error": "Could not connect to the server.",
+        
+        # Admin panel tabs
+        "tab_accounts": "User Accounts",
+        "tab_online": "Online Users",
+        "tab_messages": "Messages",
+        
+        # User accounts
+        "accounts_header": "User Accounts",
+        "accounts_loading": "Loading accounts...",
+        "accounts_username": "Username",
+        "accounts_type": "Type",
+        "accounts_note": "Note",
+        "accounts_type_default": "User",
+        "accounts_type_admin": "Admin",
+        "accounts_empty": "No user accounts found.",
+        
+        # Online users
+        "online_header": "Online Users",
+        "online_loading": "Loading users...",
+        "online_username": "Username",
+        "online_nickname": "Nickname",
+        "online_channel": "Channel",
+        "online_status": "Status",
+        "online_send_message": "Send Message",
+        "online_empty": "No users online.",
+        
+        # Private messages
+        "pm_header": "Send Private Message",
+        "pm_to_user": "To:",
+        "pm_message": "Message:",
+        "pm_send_button": "Send",
+        "pm_sent_success": "Message sent successfully!",
+        "pm_sent_error": "Failed to send message.",
+        
+        # Channel messages
+        "messages_header": "Channel Messages",
+        "messages_from": "From",
+        "messages_channel": "Channel",
+        "messages_content": "Message",
+        "messages_time": "Time",
+        "messages_empty": "No messages yet.",
+        "messages_clear": "Clear Messages",
+        
+        # Navigation
+        "admin_back_to_registration": "← Back to Registration",
     },
     "ru": {
         # Page titles
@@ -99,6 +154,61 @@ TRANSLATIONS = {
         "language": "Язык",
         "english": "English",
         "russian": "Русский",
+        
+        # Admin panel
+        "admin_title": "Панель администратора - TeamTalk",
+        "admin_header": "Панель администратора",
+        "admin_login_header": "Вход администратора",
+        "admin_login_button": "Войти",
+        "admin_logout_button": "Выйти",
+        "admin_login_error": "Неверные учётные данные или аккаунт не администратора.",
+        "admin_connecting": "Подключение к серверу...",
+        "admin_connection_error": "Не удалось подключиться к серверу.",
+        
+        # Admin panel tabs
+        "tab_accounts": "Учётные записи",
+        "tab_online": "Пользователи онлайн",
+        "tab_messages": "Сообщения",
+        
+        # User accounts
+        "accounts_header": "Учётные записи пользователей",
+        "accounts_loading": "Загрузка учётных записей...",
+        "accounts_username": "Имя пользователя",
+        "accounts_type": "Тип",
+        "accounts_note": "Примечание",
+        "accounts_type_default": "Пользователь",
+        "accounts_type_admin": "Администратор",
+        "accounts_empty": "Учётные записи не найдены.",
+        
+        # Online users
+        "online_header": "Пользователи онлайн",
+        "online_loading": "Загрузка пользователей...",
+        "online_username": "Имя пользователя",
+        "online_nickname": "Псевдоним",
+        "online_channel": "Канал",
+        "online_status": "Статус",
+        "online_send_message": "Отправить сообщение",
+        "online_empty": "Нет пользователей онлайн.",
+        
+        # Private messages
+        "pm_header": "Отправить личное сообщение",
+        "pm_to_user": "Кому:",
+        "pm_message": "Сообщение:",
+        "pm_send_button": "Отправить",
+        "pm_sent_success": "Сообщение отправлено!",
+        "pm_sent_error": "Не удалось отправить сообщение.",
+        
+        # Channel messages
+        "messages_header": "Сообщения каналов",
+        "messages_from": "От",
+        "messages_channel": "Канал",
+        "messages_content": "Сообщение",
+        "messages_time": "Время",
+        "messages_empty": "Пока нет сообщений.",
+        "messages_clear": "Очистить сообщения",
+        
+        # Navigation
+        "admin_back_to_registration": "← Вернуться к регистрации",
     }
 }
 

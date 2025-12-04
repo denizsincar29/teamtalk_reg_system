@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t.admin_title }}</title>
+    <link rel="stylesheet" href="{{ request.url_for('static', path='style.css') }}">
+    <style>
+        /* Admin panel specific styles */
+        body {
+            max-width: 900px;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .admin-header h1 {
+            margin: 0;
+        }
+        
+        .logout-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #4CAF50;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            color: #555;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+        
+        .tab-btn:hover {
+            color: #4CAF50;
+        }
+        
+        .tab-btn.active {
+            color: #4CAF50;
+            border-bottom-color: #4CAF50;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .empty-message {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-style: italic;
+        }
+        
+        .action-btn {
+            background-color: #2196F3;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .action-btn:hover {
+            background-color: #1976D2;
+        }
+        
+        .refresh-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .clear-btn {
+            background-color: #ff9800;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
+        .clear-btn:hover {
+            background-color: #f57c00;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        .modal h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .modal textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            box-sizing: border-box;
+        }
+        
+        .modal button[type="submit"] {
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .badge-admin {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .badge-user {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .message-row {
+            background-color: #f9f9f9;
+        }
+        
+        .message-row:nth-child(odd) {
+            background-color: #fff;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            z-index: 2000;
+            display: none;
+        }
+        
+        .toast-success {
+            background-color: #28a745;
+        }
+        
+        .toast-error {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="language-switcher">
+        <span>{{ t.language }}:</span>
+        <a href="{{ request.url_for('admin_home') }}?lang=en" class="{% if lang == 'en' %}active{% endif %}">{{ t.english }}</a>
+        <a href="{{ request.url_for('admin_home') }}?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">{{ t.russian }}</a>
+    </div>
+    
+    <div class="form-container">
+        <div class="admin-header">
+            <h1>{{ t.admin_header }}</h1>
+            <a href="{{ request.url_for('admin_logout') }}?lang={{ lang }}" class="logout-btn">{{ t.admin_logout_button }}</a>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('accounts')">{{ t.tab_accounts }}</button>
+            <button class="tab-btn" onclick="showTab('online')">{{ t.tab_online }}</button>
+            <button class="tab-btn" onclick="showTab('messages')">{{ t.tab_messages }}</button>
+        </div>
+        
+        <!-- User Accounts Tab -->
+        <div id="accounts-tab" class="tab-content active">
+            <h2>{{ t.accounts_header }}</h2>
+            <button class="refresh-btn" onclick="loadAccounts()">↻ Refresh</button>
+            <div id="accounts-loading" class="loading">{{ t.accounts_loading }}</div>
+            <div id="accounts-table" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t.accounts_username }}</th>
+                            <th>{{ t.accounts_type }}</th>
+                            <th>{{ t.accounts_note }}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accounts-body">
+                    </tbody>
+                </table>
+            </div>
+            <div id="accounts-empty" class="empty-message" style="display: none;">{{ t.accounts_empty }}</div>
+        </div>
+        
+        <!-- Online Users Tab -->
+        <div id="online-tab" class="tab-content">
+            <h2>{{ t.online_header }}</h2>
+            <button class="refresh-btn" onclick="loadOnlineUsers()">↻ Refresh</button>
+            <div id="online-loading" class="loading">{{ t.online_loading }}</div>
+            <div id="online-table" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t.online_username }}</th>
+                            <th>{{ t.online_nickname }}</th>
+                            <th>{{ t.online_channel }}</th>
+                            <th>{{ t.online_status }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="online-body">
+                    </tbody>
+                </table>
+            </div>
+            <div id="online-empty" class="empty-message" style="display: none;">{{ t.online_empty }}</div>
+        </div>
+        
+        <!-- Messages Tab -->
+        <div id="messages-tab" class="tab-content">
+            <h2>{{ t.messages_header }}</h2>
+            <button class="refresh-btn" onclick="loadMessages()">↻ Refresh</button>
+            <button class="clear-btn" onclick="clearMessages()">{{ t.messages_clear }}</button>
+            <div id="messages-loading" class="loading" style="display: none;">Loading...</div>
+            <div id="messages-table" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t.messages_time }}</th>
+                            <th>{{ t.messages_from }}</th>
+                            <th>{{ t.messages_channel }}</th>
+                            <th>{{ t.messages_content }}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="messages-body">
+                    </tbody>
+                </table>
+            </div>
+            <div id="messages-empty" class="empty-message">{{ t.messages_empty }}</div>
+        </div>
+        
+        <div class="back-link">
+            <a href="{{ request.url_for('home') }}?lang={{ lang }}">{{ t.admin_back_to_registration }}</a>
+        </div>
+    </div>
+    
+    <!-- Private Message Modal -->
+    <div id="pm-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h2>{{ t.pm_header }}</h2>
+            <form id="pm-form" onsubmit="sendPrivateMessage(event)">
+                <div class="form-group">
+                    <label>{{ t.pm_to_user }}</label>
+                    <input type="text" id="pm-to-user" readonly>
+                    <input type="hidden" id="pm-user-id">
+                </div>
+                <div class="form-group">
+                    <label for="pm-message">{{ t.pm_message }}</label>
+                    <textarea id="pm-message" required placeholder="..."></textarea>
+                </div>
+                <button type="submit">{{ t.pm_send_button }}</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Toast notification -->
+    <div id="toast" class="toast"></div>
+    
+    <script>
+        const translations = {
+            accounts_type_default: "{{ t.accounts_type_default }}",
+            accounts_type_admin: "{{ t.accounts_type_admin }}",
+            online_send_message: "{{ t.online_send_message }}",
+            pm_sent_success: "{{ t.pm_sent_success }}",
+            pm_sent_error: "{{ t.pm_sent_error }}"
+        };
+        
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load data for the tab
+            if (tabName === 'accounts') {
+                loadAccounts();
+            } else if (tabName === 'online') {
+                loadOnlineUsers();
+            } else if (tabName === 'messages') {
+                loadMessages();
+            }
+        }
+        
+        function showToast(message, isSuccess) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + (isSuccess ? 'toast-success' : 'toast-error');
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        async function loadAccounts() {
+            const loading = document.getElementById('accounts-loading');
+            const table = document.getElementById('accounts-table');
+            const empty = document.getElementById('accounts-empty');
+            const tbody = document.getElementById('accounts-body');
+            
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                const response = await fetch('{{ request.url_for("get_accounts") }}');
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (data.error) {
+                    showToast(data.error, false);
+                    return;
+                }
+                
+                if (data.accounts && data.accounts.length > 0) {
+                    tbody.innerHTML = '';
+                    data.accounts.forEach(account => {
+                        const row = document.createElement('tr');
+                        const typeLabel = account.user_type === 'admin' ? translations.accounts_type_admin : translations.accounts_type_default;
+                        const badgeClass = account.user_type === 'admin' ? 'badge-admin' : 'badge-user';
+                        row.innerHTML = `
+                            <td>${escapeHtml(account.username)}</td>
+                            <td><span class="badge ${badgeClass}">${typeLabel}</span></td>
+                            <td>${escapeHtml(account.note || '')}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    table.style.display = 'block';
+                } else {
+                    empty.style.display = 'block';
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                showToast('Error loading accounts', false);
+            }
+        }
+        
+        async function loadOnlineUsers() {
+            const loading = document.getElementById('online-loading');
+            const table = document.getElementById('online-table');
+            const empty = document.getElementById('online-empty');
+            const tbody = document.getElementById('online-body');
+            
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                const response = await fetch('{{ request.url_for("get_online_users") }}');
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (data.error) {
+                    showToast(data.error, false);
+                    return;
+                }
+                
+                if (data.users && data.users.length > 0) {
+                    tbody.innerHTML = '';
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${escapeHtml(user.username || '')}</td>
+                            <td>${escapeHtml(user.nickname || '')}</td>
+                            <td>${escapeHtml(user.channel || '')}</td>
+                            <td>${escapeHtml(user.status || '')}</td>
+                            <td><button class="action-btn" onclick="openMessageModal(${user.id}, '${escapeHtml(user.nickname || user.username || '')}')">${translations.online_send_message}</button></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    table.style.display = 'block';
+                } else {
+                    empty.style.display = 'block';
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                showToast('Error loading users', false);
+            }
+        }
+        
+        async function loadMessages() {
+            const loading = document.getElementById('messages-loading');
+            const table = document.getElementById('messages-table');
+            const empty = document.getElementById('messages-empty');
+            const tbody = document.getElementById('messages-body');
+            
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+            
+            try {
+                const response = await fetch('{{ request.url_for("get_channel_messages") }}');
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (data.messages && data.messages.length > 0) {
+                    tbody.innerHTML = '';
+                    // Show messages in reverse order (newest first)
+                    data.messages.slice().reverse().forEach(msg => {
+                        const row = document.createElement('tr');
+                        row.className = 'message-row';
+                        row.innerHTML = `
+                            <td>${escapeHtml(msg.time || '')}</td>
+                            <td>${escapeHtml(msg.from_user || '')}</td>
+                            <td>${escapeHtml(msg.channel || '')}</td>
+                            <td>${escapeHtml(msg.content || '')}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    table.style.display = 'block';
+                } else {
+                    empty.style.display = 'block';
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                showToast('Error loading messages', false);
+            }
+        }
+        
+        async function clearMessages() {
+            try {
+                const response = await fetch('{{ request.url_for("clear_channel_messages") }}', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadMessages();
+                } else {
+                    showToast(data.error || 'Error clearing messages', false);
+                }
+            } catch (error) {
+                showToast('Error clearing messages', false);
+            }
+        }
+        
+        function openMessageModal(userId, userName) {
+            document.getElementById('pm-user-id').value = userId;
+            document.getElementById('pm-to-user').value = userName;
+            document.getElementById('pm-message').value = '';
+            document.getElementById('pm-modal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('pm-modal').style.display = 'none';
+        }
+        
+        async function sendPrivateMessage(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('pm-user-id').value;
+            const message = document.getElementById('pm-message').value;
+            
+            try {
+                const formData = new FormData();
+                formData.append('user_id', userId);
+                formData.append('message', message);
+                
+                const response = await fetch('{{ request.url_for("send_private_message") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeModal();
+                    showToast(translations.pm_sent_success, true);
+                } else {
+                    showToast(data.error || translations.pm_sent_error, false);
+                }
+            } catch (error) {
+                showToast(translations.pm_sent_error, false);
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('pm-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+        
+        // Load accounts on page load
+        document.addEventListener('DOMContentLoaded', loadAccounts);
+    </script>
+</body>
+</html>

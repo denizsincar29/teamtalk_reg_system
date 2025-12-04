@@ -2,6 +2,7 @@
 
 import asyncio
 from multiprocessing import Process, Queue
+from typing import Any
 
 from .config import RESPONSE_POLL_INTERVAL, RESPONSE_TIMEOUT_SECONDS, STARTUP_DELAY_SECONDS
 from .tt_bot import teamtalk_worker
@@ -114,6 +115,149 @@ class TeamTalkManager:
                     return response.get("success", False), response.get("error")
             
             return False, "Timeout waiting for response"
+    
+    async def authenticate_admin(self, username: str, password: str) -> tuple[bool, bool, str | None]:
+        """Authenticate a user and check if they are an admin.
+        
+        Args:
+            username: The username to authenticate.
+            password: The password to authenticate.
+            
+        Returns:
+            A tuple of (success, is_admin, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "authenticate_admin",
+                "username": username,
+                "password": password
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("is_admin", False), response.get("error")
+            
+            return False, False, "Timeout waiting for response"
+    
+    async def list_user_accounts(self) -> tuple[list[dict[str, Any]], str | None]:
+        """List all user accounts on the server.
+        
+        Returns:
+            A tuple of (accounts_list, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return [], "Worker not started"
+            
+            self.request_queue.put({"action": "list_accounts"})
+            
+            # Wait for response with longer timeout for account listing
+            timeout = RESPONSE_TIMEOUT_SECONDS * 2
+            iterations = int(timeout / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("accounts", []), response.get("error")
+            
+            return [], "Timeout waiting for response"
+    
+    async def get_online_users(self) -> tuple[list[dict[str, Any]], str | None]:
+        """Get list of online users on the server.
+        
+        Returns:
+            A tuple of (users_list, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return [], "Worker not started"
+            
+            self.request_queue.put({"action": "get_online_users"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("users", []), response.get("error")
+            
+            return [], "Timeout waiting for response"
+    
+    async def send_private_message(self, user_id: int, message: str) -> tuple[bool, str | None]:
+        """Send a private message to a user.
+        
+        Args:
+            user_id: The ID of the user to send the message to.
+            message: The message to send.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "send_private_message",
+                "user_id": user_id,
+                "message": message
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def get_channel_messages(self) -> list[dict[str, Any]]:
+        """Get channel messages collected by the bot.
+        
+        Returns:
+            A list of message dictionaries.
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return []
+            
+            self.request_queue.put({"action": "get_channel_messages"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("messages", [])
+            
+            return []
+    
+    async def clear_channel_messages(self) -> None:
+        """Clear all collected channel messages."""
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return
+            
+            self.request_queue.put({"action": "clear_channel_messages"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    self.response_queue.get_nowait()
+                    return
     
     def stop(self) -> None:
         """Stop the TeamTalk worker process."""
