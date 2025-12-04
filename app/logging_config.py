@@ -32,12 +32,13 @@ def setup_logging() -> logging.Logger:
     # Create logs directory if it doesn't exist
     LOG_DIR.mkdir(exist_ok=True)
     
-    # Create root logger
+    # Create root logger for teamtalk application
     logger = logging.getLogger("teamtalk")
     logger.setLevel(logging.DEBUG)
     
-    # Remove existing handlers
-    logger.handlers.clear()
+    # Only add handlers if not already configured (prevents duplicate handlers on reimport)
+    if logger.handlers:
+        return logger
     
     # Log format
     log_format = logging.Formatter(

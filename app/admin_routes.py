@@ -620,7 +620,7 @@ async def run_task_now(request: Request, task_id: str) -> JSONResponse:
     return JSONResponse({"success": True})
 
 
-@router.post("/api/kick")
+@router.post("/api/kick", name="kick_user")
 async def kick_user(
     request: Request,
     user_id: int = Form(...)
@@ -638,7 +638,7 @@ async def kick_user(
     return JSONResponse({"success": True})
 
 
-@router.post("/api/ban")
+@router.post("/api/ban", name="ban_user")
 async def ban_user(
     request: Request,
     user_id: int = Form(...)
@@ -656,7 +656,7 @@ async def ban_user(
     return JSONResponse({"success": True})
 
 
-@router.post("/api/ban_username")
+@router.post("/api/ban_username", name="ban_username")
 async def ban_username(
     request: Request,
     username: str = Form(...)
