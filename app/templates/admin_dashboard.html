@@ -932,7 +932,7 @@
             } catch (e) {}
         }
         
-        // Broadcast message notification - attention-grabbing alert
+        // Broadcast message notification - softer TeamTalk-style chime
         function playBroadcastNotification() {
             if (!soundEnabled) return;
             try {
@@ -941,21 +941,21 @@
                 
                 const now = ctx.currentTime;
                 
-                // Two-tone alert sound (like a horn) for broadcasts
-                // E5 -> A5 -> E5 (attention pattern)
-                const notes = [659.25, 880, 659.25];
+                // Eb4 -> Bb4 -> E4 -> Eb5 (TeamTalk-style broadcast chime)
+                // Eb4=311.13Hz, Bb4=466.16Hz, E4=329.63Hz, Eb5=622.25Hz
+                const notes = [311.13, 466.16, 329.63, 622.25];
                 notes.forEach((freq, i) => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
-                    osc.type = 'sawtooth'; // More prominent waveform
+                    osc.type = 'sine'; // Softer waveform like TeamTalk client
                     osc.frequency.setValueAtTime(freq, now + i * 0.12);
                     gain.gain.setValueAtTime(0, now + i * 0.12);
-                    gain.gain.linearRampToValueAtTime(0.15, now + i * 0.12 + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.25);
+                    gain.gain.linearRampToValueAtTime(0.12, now + i * 0.12 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.2);
                     osc.connect(gain);
                     gain.connect(ctx.destination);
                     osc.start(now + i * 0.12);
-                    osc.stop(now + i * 0.12 + 0.25);
+                    osc.stop(now + i * 0.12 + 0.2);
                 });
             } catch (e) {}
         }
