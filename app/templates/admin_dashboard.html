@@ -434,11 +434,23 @@
                         const row = document.createElement('tr');
                         const typeLabel = account.user_type === 'admin' ? translations.accounts_type_admin : translations.accounts_type_default;
                         const badgeClass = account.user_type === 'admin' ? 'badge-admin' : 'badge-user';
-                        row.innerHTML = `
-                            <td>${escapeHtml(account.username)}</td>
-                            <td><span class="badge ${badgeClass}">${typeLabel}</span></td>
-                            <td>${escapeHtml(account.note || '')}</td>
-                        `;
+                        
+                        // Create cells safely using textContent
+                        const usernameCell = document.createElement('td');
+                        usernameCell.textContent = account.username;
+                        
+                        const typeCell = document.createElement('td');
+                        const badge = document.createElement('span');
+                        badge.className = 'badge ' + badgeClass;
+                        badge.textContent = typeLabel;
+                        typeCell.appendChild(badge);
+                        
+                        const noteCell = document.createElement('td');
+                        noteCell.textContent = account.note || '';
+                        
+                        row.appendChild(usernameCell);
+                        row.appendChild(typeCell);
+                        row.appendChild(noteCell);
                         tbody.appendChild(row);
                     });
                     table.style.display = 'block';
@@ -476,13 +488,32 @@
                     tbody.innerHTML = '';
                     data.users.forEach(user => {
                         const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${escapeHtml(user.username || '')}</td>
-                            <td>${escapeHtml(user.nickname || '')}</td>
-                            <td>${escapeHtml(user.channel || '')}</td>
-                            <td>${escapeHtml(user.status || '')}</td>
-                            <td><button class="action-btn" onclick="openMessageModal(${user.id}, '${escapeHtml(user.nickname || user.username || '')}')">${translations.online_send_message}</button></td>
-                        `;
+                        
+                        // Create cells safely
+                        const usernameCell = document.createElement('td');
+                        usernameCell.textContent = user.username || '';
+                        
+                        const nicknameCell = document.createElement('td');
+                        nicknameCell.textContent = user.nickname || '';
+                        
+                        const channelCell = document.createElement('td');
+                        channelCell.textContent = user.channel || '';
+                        
+                        const statusCell = document.createElement('td');
+                        statusCell.textContent = user.status || '';
+                        
+                        const actionCell = document.createElement('td');
+                        const actionBtn = document.createElement('button');
+                        actionBtn.className = 'action-btn';
+                        actionBtn.textContent = translations.online_send_message;
+                        actionBtn.onclick = () => openMessageModal(user.id, user.nickname || user.username || '');
+                        actionCell.appendChild(actionBtn);
+                        
+                        row.appendChild(usernameCell);
+                        row.appendChild(nicknameCell);
+                        row.appendChild(channelCell);
+                        row.appendChild(statusCell);
+                        row.appendChild(actionCell);
                         tbody.appendChild(row);
                     });
                     table.style.display = 'block';
@@ -517,12 +548,24 @@
                     data.messages.slice().reverse().forEach(msg => {
                         const row = document.createElement('tr');
                         row.className = 'message-row';
-                        row.innerHTML = `
-                            <td>${escapeHtml(msg.time || '')}</td>
-                            <td>${escapeHtml(msg.from_user || '')}</td>
-                            <td>${escapeHtml(msg.channel || '')}</td>
-                            <td>${escapeHtml(msg.content || '')}</td>
-                        `;
+                        
+                        // Create cells safely using textContent
+                        const timeCell = document.createElement('td');
+                        timeCell.textContent = msg.time || '';
+                        
+                        const fromCell = document.createElement('td');
+                        fromCell.textContent = msg.from_user || '';
+                        
+                        const channelCell = document.createElement('td');
+                        channelCell.textContent = msg.channel || '';
+                        
+                        const contentCell = document.createElement('td');
+                        contentCell.textContent = msg.content || '';
+                        
+                        row.appendChild(timeCell);
+                        row.appendChild(fromCell);
+                        row.appendChild(channelCell);
+                        row.appendChild(contentCell);
                         tbody.appendChild(row);
                     });
                     table.style.display = 'block';
@@ -591,10 +634,7 @@
             }
         }
         
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        // Close modal when clicking outside
         }
         
         // Close modal when clicking outside

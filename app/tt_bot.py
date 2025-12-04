@@ -126,17 +126,22 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                     "error": "Not connected"
                                 })
                                 continue
-                            # Get all user accounts and check if credentials match an admin
+                            # Get all user accounts and check if user is admin
+                            # Note: TeamTalk passwords may be hashed, so we check
+                            # if the provided password matches the stored one
                             accounts = await instance.list_user_accounts()
                             is_admin = False
                             found = False
+                            username_lower = username.lower()
                             for acc in accounts:
-                                if str(acc.username).lower() == username.lower():
+                                if str(acc.username).lower() == username_lower:
                                     found = True
                                     # Check if user type is admin
                                     if acc.user_type == enums.UserType.ADMIN:
-                                        # Verify password by checking if it matches
-                                        if str(acc.password) == password:
+                                        # Check password - TeamTalk stores passwords
+                                        # in the format they were provided
+                                        stored_password = str(acc.password)
+                                        if stored_password == password:
                                             is_admin = True
                                     break
                             

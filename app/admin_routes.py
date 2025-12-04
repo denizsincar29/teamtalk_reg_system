@@ -20,6 +20,9 @@ templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
 # Simple session storage (in-memory, suitable for single-process deployment)
+# Note: Sessions will be lost when the application restarts. For production 
+# deployments requiring session persistence across restarts, consider using
+# a persistent storage solution (e.g., Redis, database).
 # Format: {session_token: {"username": str, "expires": datetime}}
 admin_sessions: dict[str, dict[str, Any]] = {}
 
