@@ -803,26 +803,24 @@
                         
                         div.appendChild(info);
                         
-                        // Don't show join button for password-protected channels
-                        if (!channel.has_password) {
-                            if (isCurrent) {
-                                const badge = document.createElement('span');
-                                badge.className = 'channel-current-badge';
-                                badge.textContent = translations.channels_current;
-                                div.appendChild(badge);
-                                
-                                const leaveBtn = document.createElement('button');
-                                leaveBtn.className = 'channel-btn leave';
-                                leaveBtn.textContent = translations.channels_leave;
-                                leaveBtn.onclick = () => leaveChannel();
-                                div.appendChild(leaveBtn);
-                            } else {
-                                const joinBtn = document.createElement('button');
-                                joinBtn.className = 'channel-btn join';
-                                joinBtn.textContent = translations.channels_join;
-                                joinBtn.onclick = () => joinChannel(channel.id);
-                                div.appendChild(joinBtn);
-                            }
+                        // Bot can join any channel (admin can bypass password)
+                        if (isCurrent) {
+                            const badge = document.createElement('span');
+                            badge.className = 'channel-current-badge';
+                            badge.textContent = translations.channels_current;
+                            div.appendChild(badge);
+                            
+                            const leaveBtn = document.createElement('button');
+                            leaveBtn.className = 'channel-btn leave';
+                            leaveBtn.textContent = translations.channels_leave;
+                            leaveBtn.onclick = () => leaveChannel();
+                            div.appendChild(leaveBtn);
+                        } else {
+                            const joinBtn = document.createElement('button');
+                            joinBtn.className = 'channel-btn join';
+                            joinBtn.textContent = translations.channels_join;
+                            joinBtn.onclick = () => joinChannel(channel.id);
+                            div.appendChild(joinBtn);
                         }
                         
                         list.appendChild(div);

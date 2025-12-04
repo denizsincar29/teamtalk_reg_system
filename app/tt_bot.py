@@ -295,7 +295,21 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             if instance is None:
                                 response_queue.put({"success": False, "error": "Not connected"})
                                 continue
-                            instance.join_channel_by_id(channel_id, "")
+                            # Get channel info to find password (admin can see passwords)
+                            channel = instance.get_channel(channel_id)
+                            if channel is None:
+                                response_queue.put({"success": False, "error": "Channel not found"})
+                                continue
+                            # Get the channel password from the SDK channel object
+                            # Admin accounts can access szPassword field
+                            password = ""
+                            try:
+                                if hasattr(channel, '_channel') and hasattr(channel._channel, 'szPassword'):
+                                    from pytalk.implementation.TeamTalkPy import TeamTalk5 as sdk
+                                    password = sdk.ttstr(channel._channel.szPassword)
+                            except Exception:
+                                password = ""
+                            instance.join_channel_by_id(channel_id, password)
                             response_queue.put({"success": True})
                         except Exception as e:
                             response_queue.put({"success": False, "error": str(e)})
@@ -336,6 +350,16 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
     async def on_my_login(srv: pytalk.server.Server) -> None:
         instance_holder["instance"] = srv.teamtalk_instance
         instance_holder["server"] = srv
+        
+        # Check if bot is an admin - exit with error if not
+        if not srv.teamtalk_instance.is_admin():
+            import sys
+            print("ERROR: Bot account does not have admin privileges on TeamTalk server.", file=sys.stderr)
+            print("The bot must be logged in with an admin account to function properly.", file=sys.stderr)
+            print("Please configure the bot with admin credentials.", file=sys.stderr)
+            response_queue.put({"error": "Bot account is not an admin on TeamTalk server"})
+            sys.exit(1)
+        
         instance_holder["ready"] = True
 
     @bot.event
