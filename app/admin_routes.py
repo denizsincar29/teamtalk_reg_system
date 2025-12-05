@@ -3,12 +3,13 @@
 import asyncio
 import html
 import json
+import os
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
-from fastapi import APIRouter, Form, Query, Request
+from fastapi import APIRouter, File, Form, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
@@ -17,6 +18,16 @@ from .manager import tt_manager
 from .scheduler import task_scheduler, TaskType
 
 router = APIRouter(prefix="/admin")
+
+# Directory for uploaded audio files
+UPLOADS_DIR = Path(__file__).parent / "uploads"
+UPLOADS_DIR.mkdir(exist_ok=True)
+
+# Maximum audio file size (10 MB)
+MAX_AUDIO_FILE_SIZE = 10 * 1024 * 1024
+
+# Allowed audio file extensions
+ALLOWED_AUDIO_EXTENSIONS = {".wav"}
 
 # Set up templates
 templates_dir = Path(__file__).parent / "templates"
@@ -742,3 +753,129 @@ async def queue_offline_pm(
         return JSONResponse({"error": str(error)}, status_code=500)
     
     return JSONResponse({"success": True, "queued": True})
+
+
+# Audio streaming routes
+
+@router.get("/api/audio/files", name="list_audio_files")
+async def list_audio_files(request: Request) -> JSONResponse:
+    """List uploaded audio files."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    files = []
+    for file_path in UPLOADS_DIR.glob("*.wav"):
+        stat = file_path.stat()
+        files.append({
+            "name": file_path.name,
+            "size": stat.st_size,
+            "modified": datetime.fromtimestamp(stat.st_mtime).isoformat()
+        })
+    
+    # Sort by modified time, newest first
+    files.sort(key=lambda x: x["modified"], reverse=True)
+    
+    return JSONResponse({"files": files})
+
+
+@router.post("/api/audio/upload", name="upload_audio")
+async def upload_audio(
+    request: Request,
+    file: UploadFile = File(...)
+) -> JSONResponse:
+    """Upload a WAV audio file."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    # Check file extension
+    if not file.filename:
+        return JSONResponse({"error": "No filename provided"}, status_code=400)
+    
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_AUDIO_EXTENSIONS:
+        return JSONResponse({"error": "Only WAV files are allowed"}, status_code=400)
+    
+    # Read file content
+    content = await file.read()
+    
+    # Check file size
+    if len(content) > MAX_AUDIO_FILE_SIZE:
+        return JSONResponse({"error": "File too large (max 10 MB)"}, status_code=400)
+    
+    # Sanitize filename - only allow alphanumeric, underscore, hyphen, and dot
+    safe_name = "".join(c for c in file.filename if c.isalnum() or c in "._-")
+    if not safe_name.lower().endswith(".wav"):
+        safe_name += ".wav"
+    
+    # Save file
+    file_path = UPLOADS_DIR / safe_name
+    file_path.write_bytes(content)
+    
+    return JSONResponse({"success": True, "filename": safe_name})
+
+
+@router.delete("/api/audio/{filename}", name="delete_audio")
+async def delete_audio(request: Request, filename: str) -> JSONResponse:
+    """Delete an uploaded audio file."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    # Sanitize filename to prevent path traversal
+    safe_name = Path(filename).name
+    file_path = UPLOADS_DIR / safe_name
+    
+    if not file_path.exists():
+        return JSONResponse({"error": "File not found"}, status_code=404)
+    
+    if not file_path.suffix.lower() == ".wav":
+        return JSONResponse({"error": "Invalid file type"}, status_code=400)
+    
+    file_path.unlink()
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/audio/stream", name="stream_audio")
+async def stream_audio(
+    request: Request,
+    filename: str = Form(...)
+) -> JSONResponse:
+    """Stream an audio file to the current channel."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    # Sanitize filename to prevent path traversal
+    safe_name = Path(filename).name
+    file_path = UPLOADS_DIR / safe_name
+    
+    if not file_path.exists():
+        return JSONResponse({"error": "File not found"}, status_code=404)
+    
+    if not file_path.suffix.lower() == ".wav":
+        return JSONResponse({"error": "Invalid file type"}, status_code=400)
+    
+    success, error = await tt_manager.stream_audio(str(file_path))
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})
+
+
+@router.post("/api/audio/stop", name="stop_audio")
+async def stop_audio(request: Request) -> JSONResponse:
+    """Stop audio streaming."""
+    token = get_session_token(request)
+    if not validate_session(token):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    success, error = await tt_manager.stop_audio()
+    
+    if not success:
+        return JSONResponse({"error": str(error)}, status_code=500)
+    
+    return JSONResponse({"success": True})

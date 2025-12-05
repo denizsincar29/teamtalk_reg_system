@@ -600,6 +600,56 @@ class TeamTalkManager:
         await task_scheduler.queue_offline_pm(username, message, "Admin PM")
         return True, None
     
+    async def stream_audio(self, file_path: str) -> tuple[bool, str | None]:
+        """Stream an audio file to the current channel.
+        
+        Args:
+            file_path: Path to the audio file to stream.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "stream_audio",
+                "file_path": file_path
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def stop_audio(self) -> tuple[bool, str | None]:
+        """Stop streaming audio.
+        
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({"action": "stop_audio"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
     def stop(self) -> None:
         """Stop the TeamTalk worker process."""
         if self.request_queue is not None:

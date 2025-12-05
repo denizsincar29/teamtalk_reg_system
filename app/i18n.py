@@ -208,6 +208,25 @@ TRANSLATIONS = {
         "tab_chat": "Chat",
         "tab_server": "Server",
         
+        # Audio streaming
+        "audio_header": "Audio Streaming",
+        "audio_upload": "Upload WAV",
+        "audio_upload_hint": "Select a WAV file (max 10 MB)",
+        "audio_files": "Audio Files",
+        "audio_no_files": "No audio files uploaded",
+        "audio_play": "Play",
+        "audio_stop": "Stop",
+        "audio_delete": "Delete",
+        "audio_upload_success": "File uploaded successfully",
+        "audio_upload_error": "Failed to upload file",
+        "audio_play_success": "Audio streaming started",
+        "audio_play_error": "Failed to start streaming",
+        "audio_stop_success": "Audio streaming stopped",
+        "audio_stop_error": "Failed to stop streaming",
+        "audio_delete_success": "File deleted",
+        "audio_delete_error": "Failed to delete file",
+        "audio_confirm_delete": "Are you sure you want to delete this file?",
+        
         # Navigation
         "admin_back_to_registration": "← Back to Registration",
     },
@@ -412,6 +431,25 @@ TRANSLATIONS = {
         "tab_users": "Пользователи",
         "tab_chat": "Чат",
         "tab_server": "Сервер",
+        
+        # Audio streaming
+        "audio_header": "Аудио трансляция",
+        "audio_upload": "Загрузить WAV",
+        "audio_upload_hint": "Выберите WAV файл (макс. 10 МБ)",
+        "audio_files": "Аудио файлы",
+        "audio_no_files": "Нет загруженных аудио файлов",
+        "audio_play": "Воспроизвести",
+        "audio_stop": "Остановить",
+        "audio_delete": "Удалить",
+        "audio_upload_success": "Файл успешно загружен",
+        "audio_upload_error": "Не удалось загрузить файл",
+        "audio_play_success": "Трансляция аудио запущена",
+        "audio_play_error": "Не удалось запустить трансляцию",
+        "audio_stop_success": "Трансляция аудио остановлена",
+        "audio_stop_error": "Не удалось остановить трансляцию",
+        "audio_delete_success": "Файл удалён",
+        "audio_delete_error": "Не удалось удалить файл",
+        "audio_confirm_delete": "Вы уверены, что хотите удалить этот файл?",
         
         # Navigation
         "admin_back_to_registration": "← Вернуться к регистрации",
