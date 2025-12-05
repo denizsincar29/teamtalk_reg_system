@@ -440,12 +440,13 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                 continue
                             # Use pytalk Status enum for proper status flags
                             # status_mode: 0=online, 1=away, 2=question
+                            # Note: Status.online, .away, .question are classmethods that return _StatusBuilder
                             if status_mode == 1:
-                                status_flags = Status.away.neutral
+                                status_flags = Status.away().neutral
                             elif status_mode == 2:
-                                status_flags = Status.question.neutral
+                                status_flags = Status.question().neutral
                             else:
-                                status_flags = Status.online.neutral
+                                status_flags = Status.online().neutral
                             instance.change_status(status_flags, status_message)
                             worker_logger.info(f"Changed status to mode={status_mode}, message='{status_message}'")
                             response_queue.put({"success": True})
