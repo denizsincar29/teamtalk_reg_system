@@ -1394,191 +1394,147 @@
             }
         }
         
+        /**
+         * Play a chime/notification sound using Web Audio API.
+         * 
+         * @param {Array} notes - Array of note names (e.g., ['C5', 'E5', 'G5']) or frequencies in Hz
+         * @param {Object} options - Sound configuration options
+         * @param {string} options.waveform - Oscillator waveform: 'sine', 'triangle', 'square', 'sawtooth' (default: 'sine')
+         * @param {number} options.noteSpacing - Time between notes in seconds (default: 0.1)
+         * @param {number} options.attack - Attack time in seconds (default: 0.02)
+         * @param {number} options.release - Release/decay time in seconds (default: 0.3)
+         * @param {number} options.volume - Peak volume 0-1 (default: 0.15)
+         */
+        function playChime(notes, options = {}) {
+            if (!soundEnabled) return;
+            
+            // Note name to frequency mapping (scientific pitch notation)
+            const noteFrequencies = {
+                'C4': 261.63, 'Db4': 277.18, 'D4': 293.66, 'Eb4': 311.13, 'E4': 329.63,
+                'F4': 349.23, 'Gb4': 369.99, 'G4': 392.00, 'Ab4': 415.30, 'A4': 440.00,
+                'Bb4': 466.16, 'B4': 493.88,
+                'C5': 523.25, 'Db5': 554.37, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25,
+                'F5': 698.46, 'Gb5': 739.99, 'G5': 783.99, 'Ab5': 830.61, 'A5': 880.00,
+                'Bb5': 932.33, 'B5': 987.77,
+                'C6': 1046.50, 'Db6': 1108.73, 'D6': 1174.66, 'Eb6': 1244.51, 'E6': 1318.51,
+                'F6': 1396.91, 'Gb6': 1479.98, 'G6': 1567.98, 'Ab6': 1661.22, 'A6': 1760.00,
+                'Bb6': 1864.66, 'B6': 1975.53
+            };
+            
+            // Default options
+            const waveform = options.waveform || 'sine';
+            const noteSpacing = options.noteSpacing !== undefined ? options.noteSpacing : 0.1;
+            const attack = options.attack !== undefined ? options.attack : 0.02;
+            const release = options.release !== undefined ? options.release : 0.3;
+            const volume = options.volume !== undefined ? options.volume : 0.15;
+            
+            try {
+                const ctx = initAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                const now = ctx.currentTime;
+                
+                notes.forEach((note, i) => {
+                    // Convert note name to frequency if needed
+                    const freq = typeof note === 'string' ? noteFrequencies[note] : note;
+                    if (!freq) return; // Skip invalid notes
+                    
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = waveform;
+                    osc.frequency.setValueAtTime(freq, now + i * noteSpacing);
+                    
+                    // Envelope: attack -> peak -> release
+                    gain.gain.setValueAtTime(0, now + i * noteSpacing);
+                    gain.gain.linearRampToValueAtTime(volume, now + i * noteSpacing + attack);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * noteSpacing + release);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * noteSpacing);
+                    osc.stop(now + i * noteSpacing + release);
+                });
+            } catch (e) {
+                // Silently fail if audio context is not available
+            }
+        }
+        
         // Channel message notification - ascending chime
         function playChannelNotification() {
-            if (!soundEnabled) return;
-            try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                
-                const now = ctx.currentTime;
-                
-                // A5 -> D6 -> E6 ascending chime
-                const notes = [880, 1174.66, 1318.51];
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
-                    gain.gain.setValueAtTime(0, now + i * 0.1);
-                    gain.gain.linearRampToValueAtTime(0.2, now + i * 0.1 + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(now + i * 0.1);
-                    osc.stop(now + i * 0.1 + 0.3);
-                });
-            } catch (e) {}
+            playChime(['A5', 'D6', 'E6'], {
+                waveform: 'sine',
+                noteSpacing: 0.1,
+                attack: 0.02,
+                release: 0.3,
+                volume: 0.2
+            });
         }
         
-        // Private message notification - different descending chime
+        // Private message notification - descending two-tone chime
         function playPrivateNotification() {
-            if (!soundEnabled) return;
-            try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                
-                const now = ctx.currentTime;
-                
-                // Higher pitch, two-tone for private messages
-                const notes = [1396.91, 1046.50]; // F6 -> C6 descending
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'triangle'; // Different waveform
-                    osc.frequency.setValueAtTime(freq, now + i * 0.15);
-                    gain.gain.setValueAtTime(0, now + i * 0.15);
-                    gain.gain.linearRampToValueAtTime(0.25, now + i * 0.15 + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.35);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(now + i * 0.15);
-                    osc.stop(now + i * 0.15 + 0.35);
-                });
-            } catch (e) {}
+            playChime(['F6', 'C6'], {
+                waveform: 'triangle',
+                noteSpacing: 0.15,
+                attack: 0.02,
+                release: 0.35,
+                volume: 0.25
+            });
         }
         
-        // Broadcast message notification - softer TeamTalk-style chime
+        // Broadcast message notification - TeamTalk-style chime
         function playBroadcastNotification() {
-            if (!soundEnabled) return;
-            try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                
-                const now = ctx.currentTime;
-                
-                // Eb4 -> Bb4 -> E4 -> Eb5 (TeamTalk-style broadcast chime)
-                // Eb4=311.13Hz, Bb4=466.16Hz, E4=329.63Hz, Eb5=622.25Hz
-                const notes = [311.13, 466.16, 329.63, 622.25];
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine'; // Softer waveform like TeamTalk client
-                    osc.frequency.setValueAtTime(freq, now + i * 0.12);
-                    gain.gain.setValueAtTime(0, now + i * 0.12);
-                    gain.gain.linearRampToValueAtTime(0.12, now + i * 0.12 + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.2);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(now + i * 0.12);
-                    osc.stop(now + i * 0.12 + 0.2);
-                });
-            } catch (e) {}
+            playChime(['Eb4', 'Bb4', 'E4', 'Eb5'], {
+                waveform: 'sine',
+                noteSpacing: 0.12,
+                attack: 0.02,
+                release: 0.2,
+                volume: 0.12
+            });
         }
         
-        // User login notification - welcoming ascending chime
+        // User login notification - welcoming major chord ascending
         function playUserLoginNotification() {
-            if (!soundEnabled) return;
-            try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                
-                const now = ctx.currentTime;
-                
-                // C5 -> E5 -> G5 major chord ascending (welcoming)
-                const notes = [523.25, 659.25, 783.99];
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, now + i * 0.08);
-                    gain.gain.setValueAtTime(0, now + i * 0.08);
-                    gain.gain.linearRampToValueAtTime(0.15, now + i * 0.08 + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.25);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(now + i * 0.08);
-                    osc.stop(now + i * 0.08 + 0.25);
-                });
-            } catch (e) {}
+            playChime(['C5', 'E5', 'G5'], {
+                waveform: 'sine',
+                noteSpacing: 0.08,
+                attack: 0.02,
+                release: 0.25,
+                volume: 0.15
+            });
         }
         
-        // User logout notification - descending minor tone
+        // User logout notification - descending farewell
         function playUserLogoutNotification() {
-            if (!soundEnabled) return;
-            try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                
-                const now = ctx.currentTime;
-                
-                // G5 -> E5 -> C5 descending (farewell)
-                const notes = [783.99, 659.25, 523.25];
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
-                    gain.gain.setValueAtTime(0, now + i * 0.1);
-                    gain.gain.linearRampToValueAtTime(0.12, now + i * 0.1 + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.2);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(now + i * 0.1);
-                    osc.stop(now + i * 0.1 + 0.2);
-                });
-            } catch (e) {}
+            playChime(['G5', 'E5', 'C5'], {
+                waveform: 'sine',
+                noteSpacing: 0.1,
+                attack: 0.02,
+                release: 0.2,
+                volume: 0.12
+            });
         }
         
-        // User joined channel - short double beep
+        // User joined channel - quick double beep
         function playUserJoinChannelNotification() {
-            if (!soundEnabled) return;
-            try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                
-                const now = ctx.currentTime;
-                
-                // Two quick beeps at E5
-                const notes = [659.25, 659.25];
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(freq, now + i * 0.12);
-                    gain.gain.setValueAtTime(0, now + i * 0.12);
-                    gain.gain.linearRampToValueAtTime(0.08, now + i * 0.12 + 0.01);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.08);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(now + i * 0.12);
-                    osc.stop(now + i * 0.12 + 0.08);
-                });
-            } catch (e) {}
+            playChime(['E5', 'E5'], {
+                waveform: 'square',
+                noteSpacing: 0.12,
+                attack: 0.01,
+                release: 0.08,
+                volume: 0.08
+            });
         }
         
         // User left channel - single low beep
         function playUserLeftChannelNotification() {
-            if (!soundEnabled) return;
-            try {
-                const ctx = initAudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                
-                const now = ctx.currentTime;
-                
-                // Single low beep at C4
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(261.63, now);
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.08, now + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            } catch (e) {}
+            playChime(['C4'], {
+                waveform: 'square',
+                noteSpacing: 0,
+                attack: 0.01,
+                release: 0.15,
+                volume: 0.08
+            });
         }
         
         // Announce to screenreader
@@ -1671,6 +1627,89 @@
             toast.className = 'toast ' + (isSuccess ? 'toast-success' : 'toast-error');
             toast.style.display = 'block';
             setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+        
+        /**
+         * Helper function to make API calls with FormData.
+         * Reduces repetitive fetch patterns across the codebase.
+         * 
+         * @param {string} url - The API endpoint URL
+         * @param {Object} data - Key-value pairs to send as FormData
+         * @param {Object} options - Additional options
+         * @param {string} options.method - HTTP method (default: 'POST')
+         * @param {string} options.successMessage - Toast message on success
+         * @param {string} options.errorMessage - Toast message on error
+         * @param {Function} options.onSuccess - Callback function on success
+         * @returns {Promise<Object>} The response data
+         */
+        async function apiCall(url, data = {}, options = {}) {
+            const method = options.method || 'POST';
+            const successMessage = options.successMessage;
+            const errorMessage = options.errorMessage || 'An error occurred';
+            const onSuccess = options.onSuccess;
+            
+            try {
+                const fetchOptions = { method };
+                
+                if (method !== 'GET' && method !== 'DELETE') {
+                    const formData = new FormData();
+                    Object.entries(data).forEach(([key, value]) => {
+                        formData.append(key, value);
+                    });
+                    fetchOptions.body = formData;
+                } else if (method === 'DELETE') {
+                    // DELETE requests don't need body
+                }
+                
+                const response = await fetch(url, fetchOptions);
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (successMessage) showToast(successMessage, true);
+                    if (onSuccess) onSuccess(result);
+                } else {
+                    showToast(result.error || errorMessage, false);
+                }
+                
+                return result;
+            } catch (error) {
+                showToast(errorMessage, false);
+                return { success: false, error: errorMessage };
+            }
+        }
+        
+        /**
+         * Helper function to create DOM elements with properties.
+         * 
+         * @param {string} tag - HTML tag name
+         * @param {Object} props - Element properties (className, textContent, onclick, etc.)
+         * @param {Array} children - Child elements to append
+         * @returns {HTMLElement} The created element
+         */
+        function createElement(tag, props = {}, children = []) {
+            const element = document.createElement(tag);
+            
+            Object.entries(props).forEach(([key, value]) => {
+                if (key === 'className') {
+                    element.className = value;
+                } else if (key === 'textContent') {
+                    element.textContent = value;
+                } else if (key === 'innerHTML') {
+                    element.innerHTML = value;
+                } else if (key === 'style' && typeof value === 'object') {
+                    Object.assign(element.style, value);
+                } else if (key.startsWith('on') && typeof value === 'function') {
+                    element.addEventListener(key.slice(2).toLowerCase(), value);
+                } else {
+                    element.setAttribute(key, value);
+                }
+            });
+            
+            children.forEach(child => {
+                if (child) element.appendChild(child);
+            });
+            
+            return element;
         }
         
         // Main bottom tabs
@@ -1971,46 +2010,20 @@
         
         // Join channel
         async function joinChannel(channelId) {
-            try {
-                const formData = new FormData();
-                formData.append('channel_id', channelId);
-                
-                const response = await fetch('{{ request.url_for("join_channel") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(translations.channels_join_success, true);
-                    loadChannels();
-                } else {
-                    showToast(data.error || translations.channels_join_error, false);
-                }
-            } catch (error) {
-                showToast(translations.channels_join_error, false);
-            }
+            await apiCall('{{ request.url_for("join_channel") }}', { channel_id: channelId }, {
+                successMessage: translations.channels_join_success,
+                errorMessage: translations.channels_join_error,
+                onSuccess: () => loadChannels()
+            });
         }
         
         // Leave channel
         async function leaveChannel() {
-            try {
-                const response = await fetch('{{ request.url_for("leave_channel") }}', {
-                    method: 'POST'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(translations.channels_leave_success, true);
-                    loadChannels();
-                } else {
-                    showToast(data.error || translations.channels_leave_error, false);
-                }
-            } catch (error) {
-                showToast(translations.channels_leave_error, false);
-            }
+            await apiCall('{{ request.url_for("leave_channel") }}', {}, {
+                successMessage: translations.channels_leave_success,
+                errorMessage: translations.channels_leave_error,
+                onSuccess: () => loadChannels()
+            });
         }
         
         // Load online users
@@ -2160,78 +2173,33 @@
         async function kickUser(userId) {
             if (!confirm(translations.confirm_kick)) return;
             
-            try {
-                const formData = new FormData();
-                formData.append('user_id', userId);
-                
-                const response = await fetch('{{ request.url_for("kick_user") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(translations.kick_user_success, true);
-                    loadOnlineUsers();
-                } else {
-                    showToast(data.error || translations.kick_user_error, false);
-                }
-            } catch (error) {
-                showToast(translations.kick_user_error, false);
-            }
+            await apiCall('{{ request.url_for("kick_user") }}', { user_id: userId }, {
+                successMessage: translations.kick_user_success,
+                errorMessage: translations.kick_user_error,
+                onSuccess: () => loadOnlineUsers()
+            });
         }
         
         // Ban user (by ID - online user)
         async function banUser(userId) {
             if (!confirm(translations.confirm_ban)) return;
             
-            try {
-                const formData = new FormData();
-                formData.append('user_id', userId);
-                
-                const response = await fetch('{{ request.url_for("ban_user") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(translations.ban_user_success, true);
-                    loadOnlineUsers();
-                } else {
-                    showToast(data.error || translations.ban_user_error, false);
-                }
-            } catch (error) {
-                showToast(translations.ban_user_error, false);
-            }
+            await apiCall('{{ request.url_for("ban_user") }}', { user_id: userId }, {
+                successMessage: translations.ban_user_success,
+                errorMessage: translations.ban_user_error,
+                onSuccess: () => loadOnlineUsers()
+            });
         }
         
         // Ban username (for offline users)
         async function banUsername(username) {
             if (!confirm(translations.confirm_ban)) return;
             
-            try {
-                const formData = new FormData();
-                formData.append('username', username);
-                
-                const response = await fetch('{{ request.url_for("ban_username") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(translations.ban_user_success, true);
-                    loadAccounts();
-                } else {
-                    showToast(data.error || translations.ban_user_error, false);
-                }
-            } catch (error) {
-                showToast(translations.ban_user_error, false);
-            }
+            await apiCall('{{ request.url_for("ban_username") }}', { username: username }, {
+                successMessage: translations.ban_user_success,
+                errorMessage: translations.ban_user_error,
+                onSuccess: () => loadAccounts()
+            });
         }
         
         // Render messages
@@ -2930,62 +2898,33 @@
         
         // Run task immediately
         async function runTask(taskId) {
-            try {
-                const response = await fetch('{{ request.url_for("run_task_now", task_id="__ID__") }}'.replace('__ID__', taskId), {
-                    method: 'POST'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(translations.scheduler_task_executed, true);
-                } else {
-                    showToast(data.error || translations.scheduler_error, false);
-                }
-            } catch (error) {
-                showToast(translations.scheduler_error, false);
-            }
+            const url = '{{ request.url_for("run_task_now", task_id="__ID__") }}'.replace('__ID__', taskId);
+            await apiCall(url, {}, {
+                successMessage: translations.scheduler_task_executed,
+                errorMessage: translations.scheduler_error
+            });
         }
         
         // Toggle task enabled/disabled
         async function toggleTask(taskId) {
-            try {
-                const response = await fetch('{{ request.url_for("toggle_task", task_id="__ID__") }}'.replace('__ID__', taskId), {
-                    method: 'POST'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    loadTasks();
-                } else {
-                    showToast(data.error || translations.scheduler_error, false);
-                }
-            } catch (error) {
-                showToast(translations.scheduler_error, false);
-            }
+            const url = '{{ request.url_for("toggle_task", task_id="__ID__") }}'.replace('__ID__', taskId);
+            await apiCall(url, {}, {
+                errorMessage: translations.scheduler_error,
+                onSuccess: () => loadTasks()
+            });
         }
         
         // Delete task
         async function deleteTask(taskId) {
             if (!confirm(translations.scheduler_delete + '?')) return;
             
-            try {
-                const response = await fetch('{{ request.url_for("delete_task", task_id="__ID__") }}'.replace('__ID__', taskId), {
-                    method: 'DELETE'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(translations.scheduler_task_deleted, true);
-                    loadTasks();
-                } else {
-                    showToast(data.error || translations.scheduler_error, false);
-                }
-            } catch (error) {
-                showToast(translations.scheduler_error, false);
-            }
+            const url = '{{ request.url_for("delete_task", task_id="__ID__") }}'.replace('__ID__', taskId);
+            await apiCall(url, {}, {
+                method: 'DELETE',
+                successMessage: translations.scheduler_task_deleted,
+                errorMessage: translations.scheduler_error,
+                onSuccess: () => loadTasks()
+            });
         }
         
         // Load bot status
@@ -3005,29 +2944,16 @@
         
         // Save bot status
         async function saveBotStatus() {
-            try {
-                const formData = new FormData();
-                formData.append('status_mode', document.getElementById('bot-status-mode').value);
-                formData.append('status_message', document.getElementById('bot-status-message').value);
-                
-                const response = await fetch('{{ request.url_for("set_bot_status") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(translations.bot_status_success, true);
-                    announceToScreenReader(translations.bot_status_success);
-                } else {
-                    showToast(data.error || translations.bot_status_error, false);
-                    announceToScreenReader(data.error || translations.bot_status_error);
-                }
-            } catch (error) {
-                showToast(translations.bot_status_error, false);
-                announceToScreenReader(translations.bot_status_error);
-            }
+            const statusData = {
+                status_mode: document.getElementById('bot-status-mode').value,
+                status_message: document.getElementById('bot-status-message').value
+            };
+            
+            await apiCall('{{ request.url_for("set_bot_status") }}', statusData, {
+                successMessage: translations.bot_status_success,
+                errorMessage: translations.bot_status_error,
+                onSuccess: () => announceToScreenReader(translations.bot_status_success)
+            });
         }
     </script>
 </body>

@@ -470,6 +470,54 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             worker_logger.error(f"Failed to get status: {e}", exc_info=True)
                             response_queue.put({"status_mode": 0, "status_message": "", "error": str(e)})
                     
+                    elif action == "stream_audio":
+                        file_path = request.get("file_path")
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            # Check if bot is in a channel
+                            channel_id = instance.getMyChannelID()
+                            if channel_id == 0:
+                                response_queue.put({"success": False, "error": "Bot is not in a channel"})
+                                continue
+                            channel = instance.get_channel(channel_id)
+                            if channel is None:
+                                response_queue.put({"success": False, "error": "Channel not found"})
+                                continue
+                            # Import and use the Streamer class
+                            from pytalk.streamer import Streamer
+                            streamer = Streamer.get_streamer_for_channel(channel)
+                            streamer.stream(file_path)
+                            worker_logger.info(f"Started streaming audio file: {file_path}")
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            worker_logger.error(f"Failed to stream audio: {e}", exc_info=True)
+                            response_queue.put({"success": False, "error": str(e)})
+                    
+                    elif action == "stop_audio":
+                        try:
+                            if instance is None:
+                                response_queue.put({"success": False, "error": "Not connected"})
+                                continue
+                            channel_id = instance.getMyChannelID()
+                            if channel_id == 0:
+                                response_queue.put({"success": False, "error": "Bot is not in a channel"})
+                                continue
+                            channel = instance.get_channel(channel_id)
+                            if channel is None:
+                                response_queue.put({"success": False, "error": "Channel not found"})
+                                continue
+                            # Get and stop the streamer for this channel
+                            from pytalk.streamer import Streamer
+                            streamer = Streamer.get_streamer_for_channel(channel)
+                            streamer.stop()
+                            worker_logger.info("Stopped audio streaming")
+                            response_queue.put({"success": True})
+                        except Exception as e:
+                            worker_logger.error(f"Failed to stop audio: {e}", exc_info=True)
+                            response_queue.put({"success": False, "error": str(e)})
+                    
                     elif action == "shutdown":
                         worker_logger.info("Shutting down bot worker")
                         break
