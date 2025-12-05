@@ -432,8 +432,8 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             response_queue.put({"success": False, "error": str(e)})
                     
                     elif action == "change_status":
-                        status_mode = request.get("status_mode", 0)  # 0 = online
-                        status_message = request.get("status_message", "")
+                        status_mode = int(request.get("status_mode", 0))  # 0 = online
+                        status_message = str(request.get("status_message", ""))
                         try:
                             if instance is None:
                                 response_queue.put({"success": False, "error": "Not connected"})
