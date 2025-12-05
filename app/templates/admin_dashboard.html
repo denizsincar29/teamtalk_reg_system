@@ -1040,28 +1040,28 @@
                             <label for="bot-status-message">{{ t.bot_status_message }}</label>
                             <input type="text" id="bot-status-message" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                         </div>
-                        <button onclick="saveBotStatus()" class="scheduler-add-btn" style="margin-top: 10px;">{{ t.bot_status_save }}</button>
+                        <button onclick="saveBotStatus()" class="scheduler-add-btn" style="margin-top: 10px;" aria-label="{{ t.bot_status_save }}">{{ t.bot_status_save }}</button>
                     </div>
                 </div>
             </div>
         </div>
         
         <!-- Bottom Navigation Tabs -->
-        <div class="bottom-tabs">
-            <button class="bottom-tab active" onclick="showMainTab('users')" id="tab-btn-users">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="bottom-tabs" role="tablist" aria-label="Main navigation">
+            <button class="bottom-tab active" onclick="showMainTab('users')" id="tab-btn-users" role="tab" aria-selected="true" aria-controls="users-panel" accesskey="1" title="{{ t.tab_users }} (Alt+1)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
                 <span>{{ t.tab_users }}</span>
             </button>
-            <button class="bottom-tab" onclick="showMainTab('chat')" id="tab-btn-chat">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button class="bottom-tab" onclick="showMainTab('chat')" id="tab-btn-chat" role="tab" aria-selected="false" aria-controls="chat-panel" accesskey="2" title="{{ t.tab_chat }} (Alt+2)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 <span>{{ t.tab_chat }}</span>
             </button>
-            <button class="bottom-tab" onclick="showMainTab('server')" id="tab-btn-server">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button class="bottom-tab" onclick="showMainTab('server')" id="tab-btn-server" role="tab" aria-selected="false" aria-controls="server-panel" accesskey="3" title="{{ t.tab_server }} (Alt+3)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                 </svg>
                 <span>{{ t.tab_server }}</span>
@@ -1677,11 +1677,21 @@
         function showMainTab(tabName) {
             // Hide all panels
             document.querySelectorAll('.main-tab-panel').forEach(panel => panel.classList.remove('active'));
-            document.querySelectorAll('.bottom-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.bottom-tab').forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            });
             
             // Show selected panel
             document.getElementById(tabName + '-panel').classList.add('active');
-            document.getElementById('tab-btn-' + tabName).classList.add('active');
+            const activeBtn = document.getElementById('tab-btn-' + tabName);
+            activeBtn.classList.add('active');
+            activeBtn.setAttribute('aria-selected', 'true');
+            
+            // Announce to screen readers
+            const tabSpan = activeBtn.querySelector('span');
+            const tabLabel = tabSpan ? tabSpan.textContent : tabName;
+            announceToScreenReader(tabLabel + ' tab selected');
             
             // Load data for the tab
             if (tabName === 'users') loadOnlineUsers();
@@ -1689,6 +1699,16 @@
                 loadChannels();
                 loadTasks();
                 loadBotStatus();
+            }
+        }
+        
+        // Announce message to screen readers
+        function announceToScreenReader(message) {
+            const announcer = document.getElementById('sr-announcements');
+            if (announcer) {
+                announcer.textContent = message;
+                // Clear after a short delay to allow re-announcement of same message
+                setTimeout(() => { announcer.textContent = ''; }, 1000);
             }
         }
         
@@ -2999,11 +3019,14 @@
                 
                 if (data.success) {
                     showToast(translations.bot_status_success, true);
+                    announceToScreenReader(translations.bot_status_success);
                 } else {
                     showToast(data.error || translations.bot_status_error, false);
+                    announceToScreenReader(data.error || translations.bot_status_error);
                 }
             } catch (error) {
                 showToast(translations.bot_status_error, false);
+                announceToScreenReader(translations.bot_status_error);
             }
         }
     </script>
