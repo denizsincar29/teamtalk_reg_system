@@ -103,7 +103,8 @@ async def admin_home(request: Request, lang: str = Query(default=None)) -> HTMLR
             value=token,
             httponly=True,
             max_age=SESSION_EXPIRY_SECONDS,
-            samesite="lax"
+            samesite="lax",
+            path="/"
         )
         return response
     
@@ -168,7 +169,8 @@ async def admin_login(
         value=token,
         httponly=True,
         max_age=SESSION_EXPIRY_SECONDS,
-        samesite="lax"
+        samesite="lax",
+        path="/"
     )
     return response
 
@@ -185,7 +187,7 @@ async def admin_logout(request: Request, lang: str = Query(default=None)) -> Red
         url=str(request.url_for("admin_home")) + f"?lang={lang}",
         status_code=303
     )
-    response.delete_cookie(key="admin_session")
+    response.delete_cookie(key="admin_session", path="/")
     return response
 
 
