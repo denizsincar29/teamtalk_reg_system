@@ -10,47 +10,172 @@
     <link rel="icon" type="image/svg+xml" href="/static/icon-192.svg">
     <link rel="apple-touch-icon" href="/static/icon-192.svg">
     <style>
-        /* Admin panel specific styles */
+        /* Admin panel specific styles - Tab-based layout */
+        * { box-sizing: border-box; }
+        
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
         body {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 20px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
         }
         
         .admin-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #4CAF50;
+            padding: 10px 15px;
+            background: #4CAF50;
+            color: white;
+            flex-shrink: 0;
         }
         
         .admin-header h1 {
             margin: 0;
-            color: #333;
+            font-size: 18px;
+            color: white;
         }
         
         .logout-btn {
-            background-color: #dc3545;
+            background-color: rgba(255,255,255,0.2);
             color: white;
-            padding: 8px 16px;
+            padding: 6px 12px;
             border: none;
             border-radius: 4px;
             text-decoration: none;
-            font-weight: bold;
+            font-size: 13px;
         }
         
         .logout-btn:hover {
-            background-color: #c82333;
+            background-color: rgba(255,255,255,0.3);
         }
         
+        .language-switcher {
+            display: flex;
+            gap: 5px;
+            margin-right: 10px;
+        }
+        
+        .language-switcher span {
+            display: none;
+        }
+        
+        .language-switcher a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .language-switcher a.active {
+            color: white;
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Main content area with bottom tabs */
+        .app-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .main-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+        }
+        
+        /* Main tab panels */
+        .main-tab-panel {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .main-tab-panel.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Bottom navigation tabs */
+        .bottom-tabs {
+            display: flex;
+            background: white;
+            border-top: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+        
+        .bottom-tab {
+            flex: 1;
+            padding: 10px 8px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #666;
+            font-size: 11px;
+        }
+        
+        .bottom-tab:hover {
+            color: #4CAF50;
+        }
+        
+        .bottom-tab.active {
+            color: #4CAF50;
+        }
+        
+        .bottom-tab svg {
+            width: 22px;
+            height: 22px;
+        }
+        
+        /* User action buttons */
+        .user-actions {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+        }
+        
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .action-btn.pm {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .action-btn.kick {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .action-btn.ban {
+            background: #dc3545;
+            color: white;
+        }
+        
+        /* Hide old sidebar layout, use new layout */
         .main-layout {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            gap: 20px;
-            min-height: 600px;
+            display: none;
         }
         
         /* Sidebar */
@@ -799,48 +924,99 @@
     </style>
 </head>
 <body>
-    <div class="language-switcher">
-        <span>{{ t.language }}:</span>
-        <a href="{{ request.url_for('admin_home') }}?lang=en" class="{% if lang == 'en' %}active{% endif %}">{{ t.english }}</a>
-        <a href="{{ request.url_for('admin_home') }}?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">{{ t.russian }}</a>
-    </div>
-    
+    <!-- Header -->
     <div class="admin-header">
         <h1>{{ t.admin_header }}</h1>
-        <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="language-switcher">
+                <a href="{{ request.url_for('admin_home') }}?lang=en" class="{% if lang == 'en' %}active{% endif %}">EN</a>
+                <a href="{{ request.url_for('admin_home') }}?lang=ru" class="{% if lang == 'ru' %}active{% endif %}">RU</a>
+            </div>
             <div class="connection-status">
                 <span class="connection-dot" id="connection-dot"></span>
-                <span id="connection-text">Connected</span>
+                <span id="connection-text">OK</span>
             </div>
             <a href="{{ request.url_for('admin_logout') }}?lang={{ lang }}" class="logout-btn">{{ t.admin_logout_button }}</a>
         </div>
     </div>
     
-    <div class="main-layout">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-section">
-                <div class="tabs">
-                    <button class="tab-btn active" onclick="showSidebarTab('online')">{{ t.tab_online }}</button>
-                    <button class="tab-btn" onclick="showSidebarTab('channels')">{{ t.channels_header }}</button>
-                    <button class="tab-btn" onclick="showSidebarTab('scheduler')">{{ t.scheduler_header }}</button>
-                    <button class="tab-btn" onclick="showSidebarTab('accounts')">{{ t.tab_accounts }}</button>
+    <!-- App Container with bottom tabs -->
+    <div class="app-container">
+        <div class="main-content">
+            <!-- Users Tab Panel -->
+            <div id="users-panel" class="main-tab-panel active">
+                <div class="sidebar" style="background: white; border-radius: 8px; padding: 0; overflow: hidden;">
+                    <div class="tabs" style="padding: 10px; background: #f0f0f0; display: flex; gap: 5px;">
+                        <button class="tab-btn active" onclick="showSidebarTab('online')" id="online-subtab">{{ t.tab_online }}</button>
+                        <button class="tab-btn" onclick="showSidebarTab('accounts')" id="accounts-subtab">{{ t.tab_accounts }}</button>
+                    </div>
+                    
+                    <div id="online-tab" class="tab-content active" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+                        <ul class="user-list" id="online-users-list">
+                            <li class="user-item loading">Loading...</li>
+                        </ul>
+                    </div>
+                    
+                    <div id="accounts-tab" class="tab-content" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+                        <div class="accounts-list" id="accounts-list">
+                            <div class="loading" style="padding: 15px;">Loading...</div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div id="online-tab" class="tab-content active">
-                    <ul class="user-list" id="online-users-list">
-                        <li class="user-item loading">Loading...</li>
-                    </ul>
+            </div>
+            
+            <!-- Chat Tab Panel -->
+            <div id="chat-panel" class="main-tab-panel">
+                <div class="chat-container" style="height: 100%; display: flex; flex-direction: column;">
+                    <div class="chat-header">
+                        <h2>{{ t.messages_header }}</h2>
+                        <div class="chat-actions">
+                            <button onclick="clearMessages()">{{ t.messages_clear }}</button>
+                        </div>
+                    </div>
+                    
+                    <div class="sound-banner" id="sound-banner" onclick="enableNotifications()" onkeydown="if(event.key==='Enter'||event.key===' ')enableNotifications()" tabindex="0" role="button" aria-label="{{ t.messages_enable_sound }}">
+                        {{ t.messages_enable_sound }}
+                    </div>
+                    
+                    <div class="chat-messages" id="chat-messages" style="flex: 1;">
+                        <div class="empty-chat" id="empty-chat">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span>{{ t.messages_empty }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <div class="mention-suggestions" id="mention-suggestions"></div>
+                        <form class="chat-input-form" onsubmit="sendMessage(event)">
+                            <input type="text" class="chat-input" id="message-input" 
+                                   placeholder="{{ t.messages_reply_placeholder }}" 
+                                   autocomplete="off"
+                                   oninput="handleInput(event)">
+                            <button type="submit" class="send-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                
-                <div id="channels-tab" class="tab-content">
-                    <div class="channels-list" id="channels-list">
-                        <div class="loading">Loading...</div>
+            </div>
+            
+            <!-- Server Tab Panel -->
+            <div id="server-panel" class="main-tab-panel">
+                <div class="sidebar" style="background: white; border-radius: 8px; padding: 0; overflow: hidden; margin-bottom: 15px;">
+                    <div style="padding: 12px 15px; background: #f0f0f0; font-weight: 600;">{{ t.channels_header }}</div>
+                    <div class="channels-list" id="channels-list" style="max-height: 300px; overflow-y: auto;">
+                        <div class="loading" style="padding: 15px;">Loading...</div>
                     </div>
                 </div>
                 
-                <div id="scheduler-tab" class="tab-content">
-                    <div class="scheduler-section">
+                <div class="sidebar" style="background: white; border-radius: 8px; padding: 0; overflow: hidden;">
+                    <div style="padding: 12px 15px; background: #f0f0f0; font-weight: 600;">{{ t.scheduler_header }}</div>
+                    <div class="scheduler-section" style="padding: 15px;">
                         <button class="scheduler-add-btn" onclick="openAddTaskModal()">{{ t.scheduler_add_task }}</button>
                         <div class="tasks-list" id="tasks-list">
                             <div class="empty-tasks">{{ t.scheduler_no_tasks }}</div>
@@ -848,51 +1024,48 @@
                     </div>
                 </div>
                 
-                <div id="accounts-tab" class="tab-content">
-                    <div class="accounts-list" id="accounts-list">
-                        <div class="loading">Loading...</div>
+                <!-- Bot Status Section -->
+                <div class="sidebar" style="background: white; border-radius: 8px; padding: 0; overflow: hidden; margin-top: 15px;">
+                    <div style="padding: 12px 15px; background: #f0f0f0; font-weight: 600;">{{ t.bot_status_header }}</div>
+                    <div style="padding: 15px;">
+                        <div class="form-group">
+                            <label for="bot-status-mode">{{ t.bot_status_mode }}</label>
+                            <select id="bot-status-mode" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="0">{{ t.scheduler_status_online }}</option>
+                                <option value="1">{{ t.scheduler_status_away }}</option>
+                                <option value="2">{{ t.scheduler_status_question }}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bot-status-message">{{ t.bot_status_message }}</label>
+                            <input type="text" id="bot-status-message" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                        </div>
+                        <button onclick="saveBotStatus()" class="scheduler-add-btn" style="margin-top: 10px;" aria-label="{{ t.bot_status_save }}">{{ t.bot_status_save }}</button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Chat Container -->
-        <div class="chat-container">
-            <div class="chat-header">
-                <h2>{{ t.messages_header }}</h2>
-                <div class="chat-actions">
-                    <button onclick="clearMessages()">{{ t.messages_clear }}</button>
-                </div>
-            </div>
-            
-            <!-- Sound enable banner -->
-            <div class="sound-banner" id="sound-banner" onclick="enableNotifications()" onkeydown="if(event.key==='Enter'||event.key===' ')enableNotifications()" tabindex="0" role="button" aria-label="{{ t.messages_enable_sound }}">
-                {{ t.messages_enable_sound }}
-            </div>
-            
-            <div class="chat-messages" id="chat-messages">
-                <div class="empty-chat" id="empty-chat">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    <span>{{ t.messages_empty }}</span>
-                </div>
-            </div>
-            
-            <div class="chat-input-container">
-                <div class="mention-suggestions" id="mention-suggestions"></div>
-                <form class="chat-input-form" onsubmit="sendMessage(event)">
-                    <input type="text" class="chat-input" id="message-input" 
-                           placeholder="{{ t.messages_reply_placeholder }}" 
-                           autocomplete="off"
-                           oninput="handleInput(event)">
-                    <button type="submit" class="send-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                    </button>
-                </form>
-            </div>
+        <!-- Bottom Navigation Tabs -->
+        <div class="bottom-tabs" role="tablist" aria-label="Main navigation">
+            <button class="bottom-tab active" onclick="showMainTab('users')" id="tab-btn-users" role="tab" aria-selected="true" aria-controls="users-panel" accesskey="1" title="{{ t.tab_users }} (Alt+1)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                <span>{{ t.tab_users }}</span>
+            </button>
+            <button class="bottom-tab" onclick="showMainTab('chat')" id="tab-btn-chat" role="tab" aria-selected="false" aria-controls="chat-panel" accesskey="2" title="{{ t.tab_chat }} (Alt+2)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span>{{ t.tab_chat }}</span>
+            </button>
+            <button class="bottom-tab" onclick="showMainTab('server')" id="tab-btn-server" role="tab" aria-selected="false" aria-controls="server-panel" accesskey="3" title="{{ t.tab_server }} (Alt+3)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                </svg>
+                <span>{{ t.tab_server }}</span>
+            </button>
         </div>
     </div>
     
@@ -920,8 +1093,17 @@
                         <option value="broadcast">{{ t.scheduler_broadcast }}</option>
                         <option value="channel_message">{{ t.scheduler_channel_message }}</option>
                         <option value="pm_online">{{ t.scheduler_pm_online }}</option>
-                        <option value="pm_offline_queue">{{ t.scheduler_pm_offline_queue }}</option>
                         <option value="on_user_login">{{ t.scheduler_on_user_login }}</option>
+                        <option value="status_change">{{ t.scheduler_status_change }}</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="status-mode-group" style="display: none;">
+                    <label for="task-status-mode">{{ t.scheduler_status_mode }}</label>
+                    <select id="task-status-mode">
+                        <option value="0">{{ t.scheduler_status_online }}</option>
+                        <option value="1">{{ t.scheduler_status_away }}</option>
+                        <option value="2">{{ t.scheduler_status_question }}</option>
                     </select>
                 </div>
                 
@@ -1024,8 +1206,8 @@
             scheduler_broadcast: "{{ t.scheduler_broadcast }}",
             scheduler_channel_message: "{{ t.scheduler_channel_message }}",
             scheduler_pm_online: "{{ t.scheduler_pm_online }}",
-            scheduler_pm_offline_queue: "{{ t.scheduler_pm_offline_queue }}",
             scheduler_on_user_login: "{{ t.scheduler_on_user_login }}",
+            scheduler_status_change: "{{ t.scheduler_status_change }}",
             scheduler_event_triggered: "{{ t.scheduler_event_triggered }}",
             scheduler_enabled: "{{ t.scheduler_enabled }}",
             scheduler_disabled: "{{ t.scheduler_disabled }}",
@@ -1040,7 +1222,20 @@
             scheduler_error: "{{ t.scheduler_error }}",
             scheduler_add_task: "{{ t.scheduler_add_task }}",
             scheduler_every_minutes: "{{ t.scheduler_every_minutes }}",
-            scheduler_one_time: "{{ t.scheduler_one_time }}"
+            scheduler_one_time: "{{ t.scheduler_one_time }}",
+            // Kick/Ban translations
+            kick_user: "{{ t.kick_user }}",
+            ban_user: "{{ t.ban_user }}",
+            kick_user_success: "{{ t.kick_user_success }}",
+            kick_user_error: "{{ t.kick_user_error }}",
+            ban_user_success: "{{ t.ban_user_success }}",
+            ban_user_error: "{{ t.ban_user_error }}",
+            confirm_kick: "{{ t.confirm_kick }}",
+            confirm_ban: "{{ t.confirm_ban }}",
+            // Bot status translations
+            bot_status_success: "{{ t.bot_status_success }}",
+            bot_status_error: "{{ t.bot_status_error }}",
+            pm_queued: "{{ t.pm_queued }}"
         };
         
         // State
@@ -1478,17 +1673,68 @@
             setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
         
-        // Sidebar tabs
+        // Main bottom tabs
+        function showMainTab(tabName) {
+            // Hide all panels
+            document.querySelectorAll('.main-tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.querySelectorAll('.bottom-tab').forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            
+            // Show selected panel
+            document.getElementById(tabName + '-panel').classList.add('active');
+            const activeBtn = document.getElementById('tab-btn-' + tabName);
+            activeBtn.classList.add('active');
+            activeBtn.setAttribute('aria-selected', 'true');
+            
+            // Announce to screen readers
+            const tabSpan = activeBtn.querySelector('span');
+            const tabLabel = tabSpan ? tabSpan.textContent : tabName;
+            announceToScreenReader(tabLabel + ' tab selected');
+            
+            // Load data for the tab
+            if (tabName === 'users') loadOnlineUsers();
+            if (tabName === 'server') {
+                loadChannels();
+                loadTasks();
+                loadBotStatus();
+            }
+        }
+        
+        // Announce message to screen readers
+        function announceToScreenReader(message) {
+            const announcer = document.getElementById('sr-announcements');
+            if (announcer) {
+                announcer.textContent = message;
+                // Clear after a short delay to allow re-announcement of same message
+                setTimeout(() => { announcer.textContent = ''; }, 1000);
+            }
+        }
+        
+        // Sidebar tabs (within Users panel)
         function showSidebarTab(tabName) {
-            document.querySelectorAll('.sidebar .tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.sidebar .tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('#users-panel .tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('#users-panel .tab-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
+            
+            // Update button state
+            if (tabName === 'online') {
+                document.getElementById('online-subtab').classList.add('active');
+            } else if (tabName === 'accounts') {
+                document.getElementById('accounts-subtab').classList.add('active');
+            }
             
             if (tabName === 'accounts') loadAccounts();
             if (tabName === 'online') loadOnlineUsers();
-            if (tabName === 'channels') loadChannels();
-            if (tabName === 'scheduler') loadTasks();
+        }
+        
+        // Switch to chat tab with mention prefilled
+        function switchToChatWithMention(username) {
+            showMainTab('chat');
+            const input = document.getElementById('message-input');
+            input.value = '@' + username + ' ';
+            input.focus();
         }
         
         // Load channels
@@ -1779,18 +2025,65 @@
                     list.innerHTML = '';
                     
                     if (data.users.length === 0) {
-                        list.innerHTML = '<li class="user-item">No users online</li>';
+                        list.innerHTML = '<li class="user-item"><span class="user-info">No users online</span></li>';
                         return;
                     }
                     
                     data.users.forEach(user => {
                         const li = document.createElement('li');
                         li.className = 'user-item';
-                        li.innerHTML = '<span class="status-dot"></span>';
-                        const nameSpan = document.createElement('span');
+                        
+                        // Status dot
+                        const statusDot = document.createElement('span');
+                        statusDot.className = 'status-dot';
+                        li.appendChild(statusDot);
+                        
+                        // User info (clickable to open chat with mention)
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'user-info';
+                        infoDiv.style.cursor = 'pointer';
+                        infoDiv.onclick = () => switchToChatWithMention(user.username);
+                        
+                        const nameSpan = document.createElement('div');
+                        nameSpan.className = 'user-name';
                         nameSpan.textContent = user.nickname || user.username;
-                        li.appendChild(nameSpan);
-                        li.onclick = () => insertMention(user.username, user.nickname);
+                        infoDiv.appendChild(nameSpan);
+                        
+                        if (user.channel) {
+                            const detailSpan = document.createElement('div');
+                            detailSpan.className = 'user-detail';
+                            detailSpan.textContent = user.channel;
+                            infoDiv.appendChild(detailSpan);
+                        }
+                        
+                        li.appendChild(infoDiv);
+                        
+                        // Action buttons
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'user-actions';
+                        
+                        // PM button
+                        const pmBtn = document.createElement('button');
+                        pmBtn.className = 'action-btn pm';
+                        pmBtn.textContent = 'PM';
+                        pmBtn.onclick = (e) => { e.stopPropagation(); switchToChatWithMention(user.username); };
+                        actionsDiv.appendChild(pmBtn);
+                        
+                        // Kick button
+                        const kickBtn = document.createElement('button');
+                        kickBtn.className = 'action-btn kick';
+                        kickBtn.textContent = translations.kick_user;
+                        kickBtn.onclick = (e) => { e.stopPropagation(); kickUser(user.id); };
+                        actionsDiv.appendChild(kickBtn);
+                        
+                        // Ban button
+                        const banBtn = document.createElement('button');
+                        banBtn.className = 'action-btn ban';
+                        banBtn.textContent = translations.ban_user;
+                        banBtn.onclick = (e) => { e.stopPropagation(); banUser(user.id); };
+                        actionsDiv.appendChild(banBtn);
+                        
+                        li.appendChild(actionsDiv);
                         list.appendChild(li);
                     });
                 }
@@ -1810,23 +2103,134 @@
                     list.innerHTML = '';
                     
                     data.accounts.forEach(account => {
-                        const div = document.createElement('div');
-                        div.className = 'account-item';
+                        const li = document.createElement('li');
+                        li.className = 'user-item';
                         
-                        const nameSpan = document.createElement('span');
-                        nameSpan.textContent = account.username;
+                        // Status dot (gray for accounts/offline)
+                        const statusDot = document.createElement('span');
+                        statusDot.className = 'status-dot offline';
+                        li.appendChild(statusDot);
+                        
+                        // User info (clickable to open chat with mention for PM)
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'user-info';
+                        infoDiv.style.cursor = 'pointer';
+                        infoDiv.onclick = () => switchToChatWithMention(account.username);
+                        
+                        const nameSpan = document.createElement('div');
+                        nameSpan.className = 'user-name';
+                        nameSpan.textContent = account.username + ' ';
                         
                         const typeSpan = document.createElement('span');
                         typeSpan.className = 'account-type ' + (account.user_type === 'admin' ? 'admin' : 'user');
                         typeSpan.textContent = account.user_type === 'admin' ? 'Admin' : 'User';
                         
-                        div.appendChild(nameSpan);
-                        div.appendChild(typeSpan);
-                        list.appendChild(div);
+                        infoDiv.appendChild(nameSpan);
+                        infoDiv.appendChild(typeSpan);
+                        li.appendChild(infoDiv);
+                        
+                        // Action buttons
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'user-actions';
+                        
+                        // PM button (will queue if offline)
+                        const pmBtn = document.createElement('button');
+                        pmBtn.className = 'action-btn pm';
+                        pmBtn.textContent = 'PM';
+                        pmBtn.onclick = (e) => { e.stopPropagation(); switchToChatWithMention(account.username); };
+                        actionsDiv.appendChild(pmBtn);
+                        
+                        // Ban button (for offline users)
+                        const banBtn = document.createElement('button');
+                        banBtn.className = 'action-btn ban';
+                        banBtn.textContent = translations.ban_user;
+                        banBtn.onclick = (e) => { e.stopPropagation(); banUsername(account.username); };
+                        actionsDiv.appendChild(banBtn);
+                        
+                        li.appendChild(actionsDiv);
+                        list.appendChild(li);
                     });
                 }
             } catch (error) {
                 console.error('Error loading accounts:', error);
+            }
+        }
+        
+        // Kick user
+        async function kickUser(userId) {
+            if (!confirm(translations.confirm_kick)) return;
+            
+            try {
+                const formData = new FormData();
+                formData.append('user_id', userId);
+                
+                const response = await fetch('{{ request.url_for("kick_user") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.kick_user_success, true);
+                    loadOnlineUsers();
+                } else {
+                    showToast(data.error || translations.kick_user_error, false);
+                }
+            } catch (error) {
+                showToast(translations.kick_user_error, false);
+            }
+        }
+        
+        // Ban user (by ID - online user)
+        async function banUser(userId) {
+            if (!confirm(translations.confirm_ban)) return;
+            
+            try {
+                const formData = new FormData();
+                formData.append('user_id', userId);
+                
+                const response = await fetch('{{ request.url_for("ban_user") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.ban_user_success, true);
+                    loadOnlineUsers();
+                } else {
+                    showToast(data.error || translations.ban_user_error, false);
+                }
+            } catch (error) {
+                showToast(translations.ban_user_error, false);
+            }
+        }
+        
+        // Ban username (for offline users)
+        async function banUsername(username) {
+            if (!confirm(translations.confirm_ban)) return;
+            
+            try {
+                const formData = new FormData();
+                formData.append('username', username);
+                
+                const response = await fetch('{{ request.url_for("ban_username") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.ban_user_success, true);
+                    loadAccounts();
+                } else {
+                    showToast(data.error || translations.ban_user_error, false);
+                }
+            } catch (error) {
+                showToast(translations.ban_user_error, false);
             }
         }
         
@@ -2042,7 +2446,22 @@
                         );
                         
                         if (!targetUser) {
-                            showToast('User not found online: ' + targetUsername, false);
+                            // User not online - queue the message for delivery when they log in
+                            formData.append('username', targetUsername);
+                            formData.append('message', pmContent);
+                            
+                            response = await fetch('{{ request.url_for("queue_offline_pm") }}', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            
+                            const data = await response.json();
+                            if (data.success) {
+                                input.value = '';
+                                showToast(translations.pm_queued, true);
+                            } else {
+                                showToast(data.error || translations.pm_sent_error, false);
+                            }
                             return;
                         }
                         
@@ -2312,8 +2731,8 @@
                     case 'broadcast': badgeText = translations.scheduler_broadcast; break;
                     case 'channel_message': badgeText = translations.scheduler_channel_message; break;
                     case 'pm_online': badgeText = translations.scheduler_pm_online; break;
-                    case 'pm_offline_queue': badgeText = translations.scheduler_pm_offline_queue; break;
                     case 'on_user_login': badgeText = translations.scheduler_on_user_login; break;
+                    case 'status_change': badgeText = translations.scheduler_status_change; break;
                 }
                 badge.textContent = badgeText;
                 header.appendChild(badge);
@@ -2408,11 +2827,13 @@
             const delayGroup = document.getElementById('delay-group');
             const timeGroup = document.getElementById('time-group');
             const recurringGroup = document.getElementById('recurring-group');
+            const statusModeGroup = document.getElementById('status-mode-group');
             
             // Show/hide based on task type
             channelGroup.style.display = taskType === 'channel_message' ? 'block' : 'none';
-            usernameGroup.style.display = ['pm_online', 'pm_offline_queue', 'on_user_login'].includes(taskType) ? 'block' : 'none';
+            usernameGroup.style.display = ['pm_online', 'on_user_login'].includes(taskType) ? 'block' : 'none';
             delayGroup.style.display = taskType === 'on_user_login' ? 'block' : 'none';
+            statusModeGroup.style.display = taskType === 'status_change' ? 'block' : 'none';
             
             // Event-triggered tasks don't need scheduled time
             const isEventTriggered = taskType === 'on_user_login';
@@ -2444,6 +2865,7 @@
             document.getElementById('task-username').value = task.target_username || '';
             document.getElementById('task-delay-min').value = task.delay_min_seconds || '0';
             document.getElementById('task-delay-max').value = task.delay_max_seconds || '0';
+            document.getElementById('task-status-mode').value = task.status_mode || '0';
             
             if (task.scheduled_time) {
                 const dt = new Date(task.scheduled_time);
@@ -2476,6 +2898,7 @@
             formData.append('target_username', document.getElementById('task-username').value);
             formData.append('delay_min_seconds', document.getElementById('task-delay-min').value);
             formData.append('delay_max_seconds', document.getElementById('task-delay-max').value);
+            formData.append('status_mode', document.getElementById('task-status-mode').value);
             
             try {
                 let response;
@@ -2562,6 +2985,48 @@
                 }
             } catch (error) {
                 showToast(translations.scheduler_error, false);
+            }
+        }
+        
+        // Load bot status
+        async function loadBotStatus() {
+            try {
+                const response = await fetch('{{ request.url_for("get_bot_status") }}');
+                const data = await response.json();
+                
+                if (!data.error) {
+                    document.getElementById('bot-status-mode').value = data.status_mode || 0;
+                    document.getElementById('bot-status-message').value = data.status_message || '';
+                }
+            } catch (error) {
+                console.error('Error loading bot status:', error);
+            }
+        }
+        
+        // Save bot status
+        async function saveBotStatus() {
+            try {
+                const formData = new FormData();
+                formData.append('status_mode', document.getElementById('bot-status-mode').value);
+                formData.append('status_message', document.getElementById('bot-status-message').value);
+                
+                const response = await fetch('{{ request.url_for("set_bot_status") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(translations.bot_status_success, true);
+                    announceToScreenReader(translations.bot_status_success);
+                } else {
+                    showToast(data.error || translations.bot_status_error, false);
+                    announceToScreenReader(data.error || translations.bot_status_error);
+                }
+            } catch (error) {
+                showToast(translations.bot_status_error, false);
+                announceToScreenReader(translations.bot_status_error);
             }
         }
     </script>

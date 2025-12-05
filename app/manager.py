@@ -447,6 +447,159 @@ class TeamTalkManager:
                     self.response_queue.get_nowait()
                     return
     
+    async def kick_user(self, user_id: int) -> tuple[bool, str | None]:
+        """Kick a user from the server.
+        
+        Args:
+            user_id: The ID of the user to kick.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "kick_user",
+                "user_id": user_id
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def ban_user(self, user_id: int) -> tuple[bool, str | None]:
+        """Ban a user from the server (online user).
+        
+        Args:
+            user_id: The ID of the user to ban.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "ban_user",
+                "user_id": user_id
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def ban_username(self, username: str) -> tuple[bool, str | None]:
+        """Ban a user account by username (for offline users).
+        
+        Args:
+            username: The username to ban.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "ban_username",
+                "username": username
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def change_status(self, status_mode: int, status_message: str) -> tuple[bool, str | None]:
+        """Change the bot's status mode and message.
+        
+        Args:
+            status_mode: Status mode (0=online, 1=away, 2=question).
+            status_message: The status message to display.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return False, "Worker not started"
+            
+            self.request_queue.put({
+                "action": "change_status",
+                "status_mode": status_mode,
+                "status_message": status_message
+            })
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("success", False), response.get("error")
+            
+            return False, "Timeout waiting for response"
+    
+    async def get_status(self) -> tuple[int, str, str | None]:
+        """Get the bot's current status mode and message.
+        
+        Returns:
+            A tuple of (status_mode, status_message, error_message).
+        """
+        async with self._lock:
+            if self.request_queue is None or self.response_queue is None:
+                return 0, "", "Worker not started"
+            
+            self.request_queue.put({"action": "get_status"})
+            
+            # Wait for response with timeout
+            iterations = int(RESPONSE_TIMEOUT_SECONDS / RESPONSE_POLL_INTERVAL)
+            for _ in range(iterations):
+                await asyncio.sleep(RESPONSE_POLL_INTERVAL)
+                if not self.response_queue.empty():
+                    response = self.response_queue.get_nowait()
+                    return response.get("status_mode", 0), response.get("status_message", ""), response.get("error")
+            
+            return 0, "", "Timeout waiting for response"
+    
+    async def queue_offline_pm(self, username: str, message: str) -> tuple[bool, str | None]:
+        """Queue a private message for an offline user.
+        
+        The message will be delivered when the user comes online.
+        
+        Args:
+            username: The username to send the message to.
+            message: The message content.
+            
+        Returns:
+            A tuple of (success, error_message).
+        """
+        # Import scheduler here to avoid circular import
+        from .scheduler import task_scheduler
+        await task_scheduler.queue_offline_pm(username, message, "Admin PM")
+        return True, None
+    
     def stop(self) -> None:
         """Stop the TeamTalk worker process."""
         if self.request_queue is not None:

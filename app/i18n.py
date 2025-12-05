@@ -150,8 +150,8 @@ TRANSLATIONS = {
         "scheduler_broadcast": "Broadcast",
         "scheduler_channel_message": "Channel Message",
         "scheduler_pm_online": "PM (if online)",
-        "scheduler_pm_offline_queue": "PM (queue for offline)",
         "scheduler_on_user_login": "On User Login",
+        "scheduler_status_change": "Status Change",
         "scheduler_message": "Message",
         "scheduler_target_channel": "Target Channel",
         "scheduler_target_username": "Target Username",
@@ -177,6 +177,36 @@ TRANSLATIONS = {
         "scheduler_task_deleted": "Task deleted successfully",
         "scheduler_task_executed": "Task executed successfully",
         "scheduler_error": "Scheduler error",
+        "scheduler_status_mode": "Status Mode",
+        "scheduler_status_online": "Online",
+        "scheduler_status_away": "Away",
+        "scheduler_status_question": "Question",
+        
+        # Bot status
+        "bot_status_header": "Bot Status",
+        "bot_status_mode": "Status Mode",
+        "bot_status_message": "Status Message",
+        "bot_status_save": "Save Status",
+        "bot_status_success": "Status updated successfully",
+        "bot_status_error": "Failed to update status",
+        
+        # User actions (kick/ban)
+        "kick_user": "Kick",
+        "ban_user": "Ban",
+        "kick_user_success": "User kicked successfully",
+        "kick_user_error": "Failed to kick user",
+        "ban_user_success": "User banned successfully",
+        "ban_user_error": "Failed to ban user",
+        "confirm_kick": "Are you sure you want to kick this user?",
+        "confirm_ban": "Are you sure you want to ban this user?",
+        
+        # Offline PM
+        "pm_queued": "Message queued for delivery when user comes online",
+        
+        # Main tabs
+        "tab_users": "Users",
+        "tab_chat": "Chat",
+        "tab_server": "Server",
         
         # Navigation
         "admin_back_to_registration": "← Back to Registration",
@@ -325,8 +355,8 @@ TRANSLATIONS = {
         "scheduler_broadcast": "Рассылка",
         "scheduler_channel_message": "Сообщение в канал",
         "scheduler_pm_online": "ЛС (если онлайн)",
-        "scheduler_pm_offline_queue": "ЛС (очередь для офлайн)",
         "scheduler_on_user_login": "При входе пользователя",
+        "scheduler_status_change": "Изменение статуса",
         "scheduler_message": "Сообщение",
         "scheduler_target_channel": "Целевой канал",
         "scheduler_target_username": "Целевой пользователь",
@@ -352,6 +382,36 @@ TRANSLATIONS = {
         "scheduler_task_deleted": "Задача успешно удалена",
         "scheduler_task_executed": "Задача успешно выполнена",
         "scheduler_error": "Ошибка планировщика",
+        "scheduler_status_mode": "Режим статуса",
+        "scheduler_status_online": "Онлайн",
+        "scheduler_status_away": "Отошёл",
+        "scheduler_status_question": "Вопрос",
+        
+        # Bot status
+        "bot_status_header": "Статус бота",
+        "bot_status_mode": "Режим статуса",
+        "bot_status_message": "Сообщение статуса",
+        "bot_status_save": "Сохранить статус",
+        "bot_status_success": "Статус успешно обновлён",
+        "bot_status_error": "Не удалось обновить статус",
+        
+        # User actions (kick/ban)
+        "kick_user": "Кикнуть",
+        "ban_user": "Забанить",
+        "kick_user_success": "Пользователь кикнут",
+        "kick_user_error": "Не удалось кикнуть пользователя",
+        "ban_user_success": "Пользователь забанен",
+        "ban_user_error": "Не удалось забанить пользователя",
+        "confirm_kick": "Вы уверены, что хотите кикнуть этого пользователя?",
+        "confirm_ban": "Вы уверены, что хотите забанить этого пользователя?",
+        
+        # Offline PM
+        "pm_queued": "Сообщение поставлено в очередь для доставки при входе пользователя",
+        
+        # Main tabs
+        "tab_users": "Пользователи",
+        "tab_chat": "Чат",
+        "tab_server": "Сервер",
         
         # Navigation
         "admin_back_to_registration": "← Вернуться к регистрации",

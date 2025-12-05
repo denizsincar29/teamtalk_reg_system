@@ -11,3 +11,7 @@ wheels/
 
 # Environment files (contain secrets)
 .env
+
+# Log files
+logs/
+*.log
