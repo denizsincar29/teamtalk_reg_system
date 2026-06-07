@@ -607,11 +607,6 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "nickname": nickname,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
-            _notify(
-                "User disconnected",
-                f"{nickname} ({username}) left the server",
-                tags=["red_circle"],
-            )
         except Exception:
             pass
 
@@ -631,11 +626,6 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "channel": channel_name,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
-            _notify(
-                "Joined channel",
-                f"{nickname} joined #{channel_name or 'root'}",
-                tags=["speaker"],
-            )
         except Exception:
             pass
 
@@ -655,11 +645,6 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "channel": channel_name,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
-            _notify(
-                "Left channel",
-                f"{nickname} left #{channel_name or 'root'}",
-                tags=["mute"],
-            )
         except Exception:
             pass
 
@@ -702,12 +687,6 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "type": "connection_lost",
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
-            _notify(
-                "Bot disconnected",
-                "Connection to TeamTalk server lost",
-                tags=["warning"],
-                priority=4,
-            )
         except Exception:
             pass
 
@@ -748,7 +727,6 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                     priority=4,
                 )
             elif isinstance(msg, tt_message.BroadcastMessage):
-                # Store broadcast messages with distinct type
                 channel_messages.append({
                     "type": "broadcast",
                     "from_user": username,
@@ -756,11 +734,43 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                     "content": str(msg.content),
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
-                _notify(
-                    f"Broadcast from {username}",
-                    str(msg.content),
-                    tags=["mega"],
-                )
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_my_connect(server: Any) -> None:
+        """Handle successful connection (before login)."""
+        try:
+            events.append({"type": "bot_connected", "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_my_connect_failed(server: Any) -> None:
+        """Handle failed connection attempt."""
+        try:
+            events.append({"type": "bot_connect_failed", "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+            _notify("Bot connection failed", "Could not connect to TeamTalk server", tags=["warning"], priority=4)
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_my_kicked_from_channel(channel: Any) -> None:
+        """Handle bot being kicked from a channel."""
+        try:
+            channel_name = str(channel.name) if hasattr(channel, "name") else "unknown"
+            events.append({"type": "bot_kicked", "channel": channel_name, "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+            _notify("Bot was kicked", f"Bot was kicked from #{channel_name}", tags=["boot"], priority=4)
+        except Exception:
+            pass
+
+    @bot.event
+    async def on_user_account_new(account: Any) -> None:
+        """Handle new user account created on the server."""
+        try:
+            username = str(account.username) if hasattr(account, "username") else "unknown"
+            events.append({"type": "user_account_new", "username": username, "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+            _notify("New account created", f"Account '{username}' was created", tags=["tada"])
         except Exception:
             pass
 
