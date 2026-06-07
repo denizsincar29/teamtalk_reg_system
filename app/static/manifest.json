@@ -1,12 +1,18 @@
 {
-  "name": "TeamTalk Admin",
-  "short_name": "TT Admin",
-  "description": "TeamTalk Registration System Admin Panel",
-  "start_url": "/admin/",
+  "name": "TeamTalk Registration",
+  "short_name": "TT Reg",
+  "description": "TeamTalk Registration System",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
   "icons": [
+    {
+      "src": "/static/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any apple-touch"
+    },
     {
       "src": "/static/icon-192.svg",
       "sizes": "192x192",

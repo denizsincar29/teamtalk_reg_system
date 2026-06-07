@@ -71,14 +71,19 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
     # Store events in a deque with max size
     events: deque[dict[str, Any]] = deque(maxlen=MAX_EVENTS)
 
+    def _reply(request: dict, payload: dict) -> None:
+        """Send a response that carries back the request's correlation ID."""
+        payload["request_id"] = request.get("request_id")
+        response_queue.put(payload)
+
     async def process_requests() -> None:
         """Process incoming requests from the queue."""
         while True:
             await asyncio.sleep(0.1)
-            
+
             if not instance_holder["ready"]:
                 continue
-                
+
             try:
                 if not request_queue.empty():
                     request = request_queue.get_nowait()
@@ -90,23 +95,23 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                         username = request.get("username")
                         try:
                             if instance is None:
-                                response_queue.put({"exists": False, "error": "Not connected"})
+                                _reply(request, {"exists": False, "error": "Not connected"})
                                 continue
                             accounts = await instance.list_user_accounts()
                             exists = any(
                                 str(acc.username).lower() == username.lower()
                                 for acc in accounts
                             )
-                            response_queue.put({"exists": exists})
+                            _reply(request, {"exists": exists})
                         except Exception as e:
-                            response_queue.put({"exists": False, "error": str(e)})
+                            _reply(request, {"exists": False, "error": str(e)})
                     
                     elif action == "create_user":
                         username = request.get("username")
                         password = request.get("password")
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             instance.create_user_account(
                                 username,
@@ -123,27 +128,27 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                 except Exception:
                                     # Don't fail registration if broadcast fails
                                     pass
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "broadcast":
                         message = request.get("message")
                         try:
                             if server is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             server.send_message(message)
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "authenticate_admin":
                         username = request.get("username")
                         password = request.get("password")
                         try:
                             if instance is None:
-                                response_queue.put({
+                                _reply(request, {
                                     "success": False,
                                     "is_admin": False,
                                     "error": "Not connected"
@@ -169,17 +174,17 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                     break
                             
                             if found:
-                                response_queue.put({
+                                _reply(request, {
                                     "success": True,
                                     "is_admin": is_admin
                                 })
                             else:
-                                response_queue.put({
+                                _reply(request, {
                                     "success": True,
                                     "is_admin": False
                                 })
                         except Exception as e:
-                            response_queue.put({
+                            _reply(request, {
                                 "success": False,
                                 "is_admin": False,
                                 "error": str(e)
@@ -188,7 +193,7 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                     elif action == "list_accounts":
                         try:
                             if instance is None:
-                                response_queue.put({"accounts": [], "error": "Not connected"})
+                                _reply(request, {"accounts": [], "error": "Not connected"})
                                 continue
                             accounts = await instance.list_user_accounts()
                             accounts_list = []
@@ -198,14 +203,14 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                     "user_type": "admin" if acc.user_type == enums.UserType.ADMIN else "default",
                                     "note": str(acc.note) if hasattr(acc, 'note') else ""
                                 })
-                            response_queue.put({"accounts": accounts_list})
+                            _reply(request, {"accounts": accounts_list})
                         except Exception as e:
-                            response_queue.put({"accounts": [], "error": str(e)})
+                            _reply(request, {"accounts": [], "error": str(e)})
                     
                     elif action == "get_online_users":
                         try:
                             if server is None:
-                                response_queue.put({"users": [], "error": "Not connected"})
+                                _reply(request, {"users": [], "error": "Not connected"})
                                 continue
                             users = server.get_users()
                             users_list = []
@@ -223,74 +228,74 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                     })
                                 except Exception:
                                     continue
-                            response_queue.put({"users": users_list})
+                            _reply(request, {"users": users_list})
                         except Exception as e:
-                            response_queue.put({"users": [], "error": str(e)})
+                            _reply(request, {"users": [], "error": str(e)})
                     
                     elif action == "send_private_message":
                         user_id = request.get("user_id")
                         message = request.get("message")
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             user = instance.get_user(user_id)
                             if user is None:
-                                response_queue.put({"success": False, "error": "User not found"})
+                                _reply(request, {"success": False, "error": "User not found"})
                                 continue
                             # send_message is an async coroutine
                             result = user.send_message(message)
                             if result is not None:
                                 await result
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "send_channel_message":
                         message = request.get("message")
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             # Get the current channel the bot is in
                             channel_id = instance.getMyChannelID()
                             if channel_id == 0:
-                                response_queue.put({"success": False, "error": "Bot is not in a channel"})
+                                _reply(request, {"success": False, "error": "Bot is not in a channel"})
                                 continue
                             channel = instance.get_channel(channel_id)
                             if channel is None:
-                                response_queue.put({"success": False, "error": "Channel not found"})
+                                _reply(request, {"success": False, "error": "Channel not found"})
                                 continue
                             # send_message is an async coroutine
                             result = channel.send_message(message)
                             if result is not None:
                                 await result
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "get_channel_messages":
-                        response_queue.put({"messages": list(channel_messages)})
+                        _reply(request, {"messages": list(channel_messages)})
                     
                     elif action == "clear_channel_messages":
                         channel_messages.clear()
-                        response_queue.put({"success": True})
+                        _reply(request, {"success": True})
                     
                     elif action == "send_broadcast_message":
                         message = request.get("message")
                         try:
                             if server is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             server.send_message(message)
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "get_channels":
                         try:
                             if server is None:
-                                response_queue.put({"channels": [], "error": "Not connected"})
+                                _reply(request, {"channels": [], "error": "Not connected"})
                                 continue
                             channels = server.get_channels()
                             channels_list = []
@@ -308,20 +313,20 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                     })
                                 except Exception:
                                     continue
-                            response_queue.put({"channels": channels_list})
+                            _reply(request, {"channels": channels_list})
                         except Exception as e:
-                            response_queue.put({"channels": [], "error": str(e)})
+                            _reply(request, {"channels": [], "error": str(e)})
                     
                     elif action == "join_channel":
                         channel_id = request.get("channel_id")
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             # Get channel info to find password (admin can see passwords)
                             channel = instance.get_channel(channel_id)
                             if channel is None:
-                                response_queue.put({"success": False, "error": "Channel not found"})
+                                _reply(request, {"success": False, "error": "Channel not found"})
                                 continue
                             # Get the channel password from the SDK channel object
                             # Admin accounts can access szPassword field
@@ -333,19 +338,19 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             except Exception:
                                 password = ""
                             instance.join_channel_by_id(channel_id, password)
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "leave_channel":
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             # Get current channel to find its parent
                             current_channel_id = instance.getMyChannelID()
                             if current_channel_id == 0:
-                                response_queue.put({"success": False, "error": "Not in any channel"})
+                                _reply(request, {"success": False, "error": "Not in any channel"})
                                 continue
                             
                             current_channel = instance.get_channel(current_channel_id)
@@ -367,76 +372,76 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             else:
                                 # No parent (root channel) - leave to vacuum
                                 instance.leave_channel()
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "get_current_channel":
                         try:
                             if instance is None:
-                                response_queue.put({"channel_id": 0, "error": "Not connected"})
+                                _reply(request, {"channel_id": 0, "error": "Not connected"})
                                 continue
                             channel_id = instance.getMyChannelID()
-                            response_queue.put({"channel_id": channel_id})
+                            _reply(request, {"channel_id": channel_id})
                         except Exception as e:
-                            response_queue.put({"channel_id": 0, "error": str(e)})
+                            _reply(request, {"channel_id": 0, "error": str(e)})
                     
                     elif action == "get_events":
-                        response_queue.put({"events": list(events)})
+                        _reply(request, {"events": list(events)})
                     
                     elif action == "clear_events":
                         events.clear()
-                        response_queue.put({"success": True})
+                        _reply(request, {"success": True})
                     
                     elif action == "kick_user":
                         user_id = request.get("user_id")
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             # Kick the user from the server
                             instance.kick_user(user_id, 0)  # 0 = from server
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "ban_user":
                         user_id = request.get("user_id")
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             # Ban the user from the server
                             instance.ban_user(user_id)
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "ban_username":
                         username = request.get("username")
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             # Ban a username (for offline users)
                             # Check if the method exists before calling
                             if not hasattr(instance, 'ban_user_account'):
                                 worker_logger.error("ban_user_account method not available in TeamTalk SDK")
-                                response_queue.put({"success": False, "error": "Ban by username not supported by TeamTalk SDK"})
+                                _reply(request, {"success": False, "error": "Ban by username not supported by TeamTalk SDK"})
                                 continue
                             instance.ban_user_account(username)
                             worker_logger.info(f"Banned user account: {username}")
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
                             worker_logger.error(f"Failed to ban username {username}: {e}", exc_info=True)
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "change_status":
                         status_mode = int(request.get("status_mode", 0))  # 0 = online
                         status_message = str(request.get("status_message", ""))
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             # Use pytalk Status enum for proper status flags
                             # status_mode: 0=online, 1=away, 2=question
@@ -449,15 +454,15 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                 status_flags = Status.online().neutral
                             instance.change_status(status_flags, status_message)
                             worker_logger.info(f"Changed status to mode={status_mode}, message='{status_message}'")
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
                             worker_logger.error(f"Failed to change status: {e}", exc_info=True)
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "get_status":
                         try:
                             if instance is None:
-                                response_queue.put({"status_mode": 0, "status_message": "", "error": "Not connected"})
+                                _reply(request, {"status_mode": 0, "status_message": "", "error": "Not connected"})
                                 continue
                             user_id = instance.getMyUserID()
                             user = instance.get_user(user_id)
@@ -465,58 +470,58 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                             status_message = str(getattr(user, 'status_msg', '')) if user else ""
                             # Extract mode bits (0=online, 1=away, 2=question)
                             mode_bits = status_mode & STATUS_MODE_MASK
-                            response_queue.put({"status_mode": mode_bits, "status_message": status_message})
+                            _reply(request, {"status_mode": mode_bits, "status_message": status_message})
                         except Exception as e:
                             worker_logger.error(f"Failed to get status: {e}", exc_info=True)
-                            response_queue.put({"status_mode": 0, "status_message": "", "error": str(e)})
+                            _reply(request, {"status_mode": 0, "status_message": "", "error": str(e)})
                     
                     elif action == "stream_audio":
                         file_path = request.get("file_path")
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             # Check if bot is in a channel
                             channel_id = instance.getMyChannelID()
                             if channel_id == 0:
-                                response_queue.put({"success": False, "error": "Bot is not in a channel"})
+                                _reply(request, {"success": False, "error": "Bot is not in a channel"})
                                 continue
                             channel = instance.get_channel(channel_id)
                             if channel is None:
-                                response_queue.put({"success": False, "error": "Channel not found"})
+                                _reply(request, {"success": False, "error": "Channel not found"})
                                 continue
                             # Import and use the Streamer class
                             from pytalk.streamer import Streamer
                             streamer = Streamer.get_streamer_for_channel(channel)
                             streamer.stream(file_path)
                             worker_logger.info(f"Started streaming audio file: {file_path}")
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
                             worker_logger.error(f"Failed to stream audio: {e}", exc_info=True)
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "stop_audio":
                         try:
                             if instance is None:
-                                response_queue.put({"success": False, "error": "Not connected"})
+                                _reply(request, {"success": False, "error": "Not connected"})
                                 continue
                             channel_id = instance.getMyChannelID()
                             if channel_id == 0:
-                                response_queue.put({"success": False, "error": "Bot is not in a channel"})
+                                _reply(request, {"success": False, "error": "Bot is not in a channel"})
                                 continue
                             channel = instance.get_channel(channel_id)
                             if channel is None:
-                                response_queue.put({"success": False, "error": "Channel not found"})
+                                _reply(request, {"success": False, "error": "Channel not found"})
                                 continue
                             # Get and stop the streamer for this channel
                             from pytalk.streamer import Streamer
                             streamer = Streamer.get_streamer_for_channel(channel)
                             streamer.stop()
                             worker_logger.info("Stopped audio streaming")
-                            response_queue.put({"success": True})
+                            _reply(request, {"success": True})
                         except Exception as e:
                             worker_logger.error(f"Failed to stop audio: {e}", exc_info=True)
-                            response_queue.put({"success": False, "error": str(e)})
+                            _reply(request, {"success": False, "error": str(e)})
                     
                     elif action == "shutdown":
                         worker_logger.info("Shutting down bot worker")
@@ -542,7 +547,7 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
             print("ERROR: Bot account does not have admin privileges on TeamTalk server.", file=sys.stderr)
             print("The bot must be logged in with an admin account to function properly.", file=sys.stderr)
             print("Please configure the bot with admin credentials.", file=sys.stderr)
-            response_queue.put({"error": "Bot account is not an admin on TeamTalk server"})
+            worker_logger.error("Bot account is not an admin on TeamTalk server.")
             sys.exit(1)
         
         instance_holder["ready"] = True
@@ -567,6 +572,10 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "user_id": user_id,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
+            # Deliver queued offline PMs and trigger on_user_login tasks
+            if username and user_id:
+                from .scheduler import task_scheduler
+                await task_scheduler.handle_user_login(username, user_id)
         except Exception:
             pass
 
@@ -655,6 +664,11 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
     async def on_my_connection_lost(instance: Any) -> None:
         """Handle connection lost."""
         try:
+            # Mark as not ready so process_requests stops accepting requests
+            # against the now-dead connection.
+            instance_holder["ready"] = False
+            instance_holder["instance"] = None
+            instance_holder["server"] = None
             events.append({
                 "type": "connection_lost",
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -706,6 +720,9 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
 
     @bot.event
     async def on_error(ename: str, *args: Any, **kwargs: Any) -> None:
-        response_queue.put({"error": f"TeamTalk error in {ename}: {args}"})
+        # Log only – do NOT push to response_queue here because there is no
+        # correlated request in flight. An orphan response would be consumed
+        # by the next unrelated caller and corrupt its result.
+        worker_logger.error("TeamTalk error in %s: %s", ename, args)
 
     bot.run()
