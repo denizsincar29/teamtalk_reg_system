@@ -14,7 +14,13 @@ from pytalk import channel as tt_channel
 from pytalk import user as tt_user
 from pytalk.enums import Status
 
-from .config import BOT_SERVER_CONFIG
+from .config import BOT_SERVER_CONFIG, NTFY_URL
+from .ntfy import notify
+
+
+def _notify(title: str, message: str, tags: list[str] | None = None, priority: int = 3) -> None:
+    """Send ntfy notification if configured."""
+    notify(title, message, NTFY_URL, tags=tags, priority=priority)
 
 # Set up logging for the worker process
 # Note: This runs in a separate process, so we set up logging here directly
@@ -129,6 +135,11 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                                     # Don't fail registration if broadcast fails
                                     pass
                             _reply(request, {"success": True})
+                            _notify(
+                                "New user registered",
+                                f"Username: {username}",
+                                tags=["tada"],
+                            )
                         except Exception as e:
                             _reply(request, {"success": False, "error": str(e)})
                     
@@ -572,6 +583,11 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "user_id": user_id,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
+            _notify(
+                "User connected",
+                f"{nickname} ({username}) joined the server",
+                tags=["green_circle"],
+            )
             # Deliver queued offline PMs and trigger on_user_login tasks
             if username and user_id:
                 from .scheduler import task_scheduler
@@ -591,6 +607,11 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "nickname": nickname,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
+            _notify(
+                "User disconnected",
+                f"{nickname} ({username}) left the server",
+                tags=["red_circle"],
+            )
         except Exception:
             pass
 
@@ -601,9 +622,8 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
             username = str(user.username) if hasattr(user, 'username') else ""
             nickname = str(user.nickname) if hasattr(user, 'nickname') else username
             channel_name = str(channel.name) if hasattr(channel, 'name') else ""
-            # Root channel may have empty name, "/" or other indicators
             if not channel_name or channel_name == "/" or channel_name.strip() == "":
-                channel_name = ""  # Will be replaced with "root" in frontend
+                channel_name = ""
             events.append({
                 "type": "user_join_channel",
                 "username": username,
@@ -611,6 +631,11 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "channel": channel_name,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
+            _notify(
+                "Joined channel",
+                f"{nickname} joined #{channel_name or 'root'}",
+                tags=["speaker"],
+            )
         except Exception:
             pass
 
@@ -621,9 +646,8 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
             username = str(user.username) if hasattr(user, 'username') else ""
             nickname = str(user.nickname) if hasattr(user, 'nickname') else username
             channel_name = str(channel.name) if hasattr(channel, 'name') else ""
-            # Root channel may have empty name, "/" or other indicators
             if not channel_name or channel_name == "/" or channel_name.strip() == "":
-                channel_name = ""  # Will be replaced with "root" in frontend
+                channel_name = ""
             events.append({
                 "type": "user_left_channel",
                 "username": username,
@@ -631,6 +655,11 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "channel": channel_name,
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
+            _notify(
+                "Left channel",
+                f"{nickname} left #{channel_name or 'root'}",
+                tags=["mute"],
+            )
         except Exception:
             pass
 
@@ -673,6 +702,12 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                 "type": "connection_lost",
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
+            _notify(
+                "Bot disconnected",
+                "Connection to TeamTalk server lost",
+                tags=["warning"],
+                priority=4,
+            )
         except Exception:
             pass
 
@@ -684,12 +719,12 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
             username = ""
             if hasattr(msg, 'user') and msg.user:
                 username = str(msg.user.nickname) if hasattr(msg.user, 'nickname') else str(msg.user.username) if hasattr(msg.user, 'username') else ""
-            
+
             if isinstance(msg, tt_message.ChannelMessage):
                 channel_name = ""
                 if hasattr(msg, 'channel') and msg.channel:
                     channel_name = str(msg.channel.name) if hasattr(msg.channel, 'name') else ""
-                
+
                 channel_messages.append({
                     "type": "channel",
                     "from_user": username,
@@ -706,6 +741,12 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                     "content": str(msg.content),
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
+                _notify(
+                    f"PM from {username}",
+                    str(msg.content),
+                    tags=["speech_balloon"],
+                    priority=4,
+                )
             elif isinstance(msg, tt_message.BroadcastMessage):
                 # Store broadcast messages with distinct type
                 channel_messages.append({
@@ -715,6 +756,11 @@ def teamtalk_worker(request_queue: Queue, response_queue: Queue) -> None:
                     "content": str(msg.content),
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
+                _notify(
+                    f"Broadcast from {username}",
+                    str(msg.content),
+                    tags=["mega"],
+                )
         except Exception:
             pass
 

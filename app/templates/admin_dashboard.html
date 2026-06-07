@@ -1172,6 +1172,7 @@
     </style>
     
     <script>
+        const BOT_USERNAME = "{{ bot_username }}";
         const translations = {
             pm_sent_success: "{{ t.pm_sent_success }}",
             pm_sent_error: "{{ t.pm_sent_error }}",
@@ -2082,6 +2083,8 @@
                         pmBtn.onclick = (e) => { e.stopPropagation(); switchToChatWithMention(user.username); };
                         actionsDiv.appendChild(pmBtn);
                         
+                        // Kick/ban buttons — hidden for the bot's own account
+                        if (user.username !== BOT_USERNAME) {
                         // Kick button
                         const kickBtn = document.createElement('button');
                         kickBtn.className = 'action-btn kick';
@@ -2095,6 +2098,7 @@
                         banBtn.textContent = translations.ban_user;
                         banBtn.onclick = (e) => { e.stopPropagation(); banUser(user.id); };
                         actionsDiv.appendChild(banBtn);
+                        } // end kick/ban guard
                         
                         li.appendChild(actionsDiv);
                         list.appendChild(li);

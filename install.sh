@@ -80,6 +80,13 @@ APP_PORT=8000
 # Reverse proxy (leave blank if serving at domain root)
 ROOT_PATH=
 FORWARDED_ALLOW_IPS=127.0.0.1
+
+# ntfy push notifications (leave blank to disable)
+# Either set NTFY_URL directly:
+NTFY_URL=
+# Or set server + topic separately:
+# NTFY_SERVER=https://ntfy.sh
+# NTFY_TOPIC=my-teamtalk-topic
 ENVEOF
         echo -e "${YELLOW}  .env created with defaults — edit $SCRIPT_DIR/.env before starting!${NC}"
     fi

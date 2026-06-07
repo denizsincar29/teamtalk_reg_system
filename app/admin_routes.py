@@ -16,6 +16,7 @@ from fastapi.templating import Jinja2Templates
 from .i18n import DEFAULT_LANGUAGE, LANGUAGES, get_translations
 from .manager import tt_manager
 from .scheduler import task_scheduler, TaskType
+from .config import SERVER_CONFIG
 
 router = APIRouter(prefix="/admin")
 
@@ -106,7 +107,8 @@ async def admin_home(request: Request, lang: str = Query(default=None)) -> HTMLR
             "request": request,
             "lang": lang,
             "t": t,
-            "username": html.escape(username)
+            "username": html.escape(username),
+            "bot_username": SERVER_CONFIG["username"],
         })
         # Refresh the cookie to extend its expiry (sliding expiration)
         response.set_cookie(

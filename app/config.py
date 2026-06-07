@@ -64,3 +64,13 @@ FORWARDED_ALLOW_IPS = os.environ.get("FORWARDED_ALLOW_IPS", "*")  # Allow all pr
 
 # Root path for reverse proxy with subpath (e.g., "/myapp" if proxied at example.com/myapp)
 ROOT_PATH = os.environ.get("ROOT_PATH", "")
+
+# ntfy push notifications
+# Set NTFY_URL to a full topic URL like https://ntfy.sh/mytopic
+# OR set NTFY_SERVER + NTFY_TOPIC separately (e.g. server=https://ntfy.sh topic=mytopic)
+# If NTFY_URL is set it takes precedence.
+_ntfy_server = os.environ.get("NTFY_SERVER", "").rstrip("/")
+_ntfy_topic = os.environ.get("NTFY_TOPIC", "")
+NTFY_URL: str = os.environ.get("NTFY_URL", "") or (
+    f"{_ntfy_server}/{_ntfy_topic}" if _ntfy_server and _ntfy_topic else ""
+)
