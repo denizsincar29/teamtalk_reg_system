@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeamTalk — регистрация</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:34rem;margin:2rem auto;padding:0 1rem;line-height:1.5}
+input{font-size:1rem;padding:.35rem;margin-top:.2rem}
+label{display:block;margin:.7rem 0}
+button{font-size:1rem;padding:.4rem 1rem;margin-top:.4rem}
+.alert{color:#b00020;font-weight:600}
+dl{display:grid;grid-template-columns:auto 1fr;gap:.2rem 1rem;max-width:26rem}
+</style>
+</head>
+<body>
+<h1>TeamTalk — регистрация аккаунта</h1>
+<p>Сервер подключения: <b>{{.Host}}</b> — TCP порт {{.TcpPort}}, UDP порт {{.UdpPort}}.</p>
+{{if .Error}}<p class="alert" role="alert">Ошибка: {{.Error}}</p>{{end}}
+<form method="post" action="/register">
+  <label>Никнейм
+    <input name="username" required minlength="3" maxlength="32" autocomplete="off" autofocus>
+  </label>
+  <label>Пароль
+    <input name="password" type="password" required minlength="4" maxlength="64">
+  </label>
+  <p>Ник — от 3 символов, пароль — от 4. Используются только латинские буквы, цифры и символ подчёркивания.</p>
+  <button type="submit">Создать аккаунт</button>
+</form>
+<hr>
+<p><a href="/admin/login">Вход для администратора</a></p>
+</body>
+</html>

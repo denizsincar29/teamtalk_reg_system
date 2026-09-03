@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeamTalk — аккаунт создан</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:34rem;margin:2rem auto;padding:0 1rem;line-height:1.5}
+dl{display:grid;grid-template-columns:auto 1fr;gap:.25rem 1rem;max-width:28rem}
+dd{margin:0;font-weight:600;word-break:break-all}
+button,a.btn{display:inline-block;font-size:1rem;padding:.45rem .9rem;margin:.3rem .3rem 0 0;border-radius:.3rem}
+a.btn{text-decoration:none;border:1px solid #888}
+.primary{background:#1a73e8;color:#fff;border:none}
+</style>
+</head>
+<body>
+<h1>Аккаунт создан</h1>
+<p>Ниже твои данные для подключения к TeamTalk. Сохрани пароль — сервер не показывает его повторно.</p>
+<dl>
+  <dt>Никнейм</dt><dd>{{.Username}}</dd>
+  <dt>Пароль</dt><dd>{{.Password}}</dd>
+  <dt>Сервер</dt><dd>{{.Host}} (TCP {{.TcpPort}}, UDP {{.UdpPort}})</dd>
+</dl>
+<p>
+  <a class="primary" href="{{.DownloadURL}}">Скачать файл подключения (.tt)</a>
+  <a class="btn" href="{{.TTURL}}">Подключиться сразу (tt://)</a>
+</p>
+<p>Файл .tt открывается клиентом TeamTalk 5 и сразу подключается к серверу под этим аккаунтом.</p>
+<hr>
+<p><a href="/">На главную</a></p>
+</body>
+</html>

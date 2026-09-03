@@ -49,8 +49,12 @@ func (u *User) fromLine(l Line) {
 }
 
 // UserAccount is a user account as returned by the listaccounts reply rows.
+// An admin listing accounts receives the stored password too (the server sends
+// it for the whole account management workflow); it is used to authenticate
+// web admins and must never be exposed to clients.
 type UserAccount struct {
 	Username    string
+	Password    string
 	UserType    int // UserTypeDefault / UserTypeAdmin
 	UserRights  int
 	Note        string
@@ -61,6 +65,7 @@ type UserAccount struct {
 // fromLine fills the account from a "useraccount" payload row.
 func (a *UserAccount) fromLine(l Line) {
 	a.Username = l.Str(KeyUsername)
+	a.Password = l.Str(KeyPassword)
 	a.UserType = l.Int(KeyUserType)
 	a.UserRights = l.Int(KeyUserRights)
 	a.Note = l.Str(KeyNoteField)

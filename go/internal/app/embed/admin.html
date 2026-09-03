@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeamTalk — админ-панель</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:60rem;margin:1.5rem auto;padding:0 1rem;line-height:1.45}
+h2{border-bottom:1px solid #ccc;padding-bottom:.2rem;margin-top:1.8rem}
+form.inline, .row{display:inline-block;margin:.25rem .5rem .25rem 0}
+label{display:inline-block;margin:.2rem .4rem .2rem 0}
+select,input[type=text],input[type=password],input[type=number],input[type=datetime-local]{font-size:.95rem;padding:.25rem;margin:.15rem .2rem .15rem 0}
+button{font-size:.95rem;padding:.3rem .7rem;margin:.15rem .2rem .15rem 0}
+ul.plain{list-style:none;padding:0;margin:.3rem 0}
+ul.plain li{border-bottom:1px solid #eee;padding:.25rem .1rem}
+.cbadge{display:inline-block;border-radius:.8rem;padding:.05rem .6rem;font-size:.85rem}
+.up{background:#d4edda}.down{background:#f8d7da}
+.muted{color:#666;font-size:.9rem}
+#statusline{position:fixed;bottom:.5rem;right:1rem;background:#fff;border:1px solid #999;padding:.3rem .7rem;border-radius:.4rem;max-width:40%;box-shadow:0 1px 3px #0003}
+fieldset{border:1px solid #ccc;border-radius:.4rem;margin:.6rem 0;padding:.5rem .8rem}
+legend{font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <h1>TeamTalk — админ-панель</h1>
+  <p id="hdr" aria-live="polite">Загрузка…</p>
+  <p><a href="/admin/logout">Выйти</a> · <label><input type="checkbox" id="live"> авто-обновление сообщений</label></p>
+</header>
+<div id="statusline" role="status" aria-live="polite"></div>
+
+<h2>Отправка сообщений</h2>
+<form class="inline" id="f-broadcast">
+  <label>Броадкаст всем: <input type="text" name="message" size="40" required></label>
+  <button>Отправить</button>
+</form>
+<form class="inline" id="f-channel">
+  <label>В текущий канал: <input type="text" name="message" size="40" required></label>
+  <button>Отправить</button>
+</form>
+<form class="inline" id="f-pm">
+  <label>Личное сообщение пользователю:</label>
+  <select name="user_id" id="pm-user"></select>
+  <input type="text" name="message" size="30" required>
+  <button>Отправить</button>
+</form>
+
+<h2>Состояние бота</h2>
+<p id="botstate">—</p>
+<form class="inline" id="f-status">
+  <label>Режим:
+    <select name="status_mode">
+      <option value="0">online</option>
+      <option value="1">away</option>
+      <option value="2">question</option>
+    </select>
+  </label>
+  <label>Статус-сообщение: <input type="text" name="status_message" size="30"></label>
+  <button>Применить</button>
+</form>
+
+<h2>Каналы</h2>
+<p id="channels">—</p>
+<form class="inline" id="f-join">
+  <label>Канал: <select name="channel_id" id="chan-select"></select></label>
+  <button>Войти в канал</button>
+</form>
+<form class="inline" id="f-leave"><button>Покинуть канал</button></form>
+
+<h2>Пользователи онлайн</h2>
+<p id="users">—</p>
+<form class="inline" id="f-kick">
+  <label>Пользователь: <select name="user_id" id="kick-user"></select></label>
+  <button>Кикнуть</button>
+</form>
+<form class="inline" id="f-ban">
+  <select name="user_id" id="ban-user"></select>
+  <button>Забанить</button>
+</form>
+<form class="inline" id="f-banuser">
+  <label>Бан по нику: <input type="text" name="username" required></label>
+  <button>Забанить аккаунт</button>
+</form>
+
+<h2>Аккаунты</h2>
+<p id="accounts">—</p>
+
+<h2>Лог сообщений</h2>
+<form class="inline" id="f-msgclear"><button>Очистить лог</button></form>
+<ul class="plain" id="messages"><li>—</li></ul>
+
+<h2>События сервера</h2>
+<form class="inline" id="f-evclear"><button>Очистить</button></form>
+<ul class="plain" id="events"><li>—</li></ul>
+
+<h2>Задачи</h2>
+<form class="inline" id="f-task-add">
+  <fieldset>
+  <legend>Новая задача</legend>
+  <label>Тип:
+    <select name="type">
+      <option value="broadcast">broadcast</option>
+      <option value="channel_message">channel_message</option>
+      <option value="pm_online">pm_online</option>
+      <option value="on_user_login">on_user_login</option>
+      <option value="status_change">status_change</option>
+    </select>
+  </label>
+  <label>Имя: <input type="text" name="name" size="14"></label>
+  <label>Сообщение: <input type="text" name="message" size="34"></label>
+  <label>Целевой ник: <input type="text" name="target_username" size="14"></label>
+  <label>Время (ГГГГ-ММ-ДД ЧЧ:ММ или дата): <input type="text" name="scheduled_time" size="20" placeholder="2026-09-05 09:00"></label>
+  <label>Каждые N минут: <input type="number" name="recurring_minutes" size="4" value="0" min="0"></label>
+  <label>Задержка мин-макс (сек): <input type="number" name="delay_min_seconds" size="4" value="0" min="0"> — <input type="number" name="delay_max_seconds" size="4" value="0" min="0"></label>
+  <label>Режим статуса (для status_change): <input type="number" name="status_mode" size="3" value="0" min="0" max="2"></label>
+  <button>Создать</button>
+  </fieldset>
+</form>
+<ul class="plain" id="tasks"><li>—</li></ul>
+
+<h2>Оффлайн личные сообщения</h2>
+<form class="inline" id="f-pm-add">
+  <label>Ник: <input type="text" name="username" required size="14"></label>
+  <label>Сообщение: <input type="text" name="message" required size="30"></label>
+  <label>Задача: <input type="text" name="task_name" size="12"></label>
+  <button>Поставить в очередь</button>
+</form>
+<form class="inline" id="f-pm-clear">
+  <label>Ник: <input type="text" name="username" required size="14"></label>
+  <button>Очистить очередь ника</button>
+</form>
+<ul class="plain" id="queue"><li>—</li></ul>
+
+<script>
+"use strict";
+var STATUSLINE=document.getElementById('statusline');
+function flash(s){STATUSLINE.textContent=s;clearTimeout(flash._t);flash._t=setTimeout(function(){STATUSLINE.textContent='';},4000)}
+async function api(path,method,body){
+  var o={method:method||'GET',headers:{}};
+  if(body){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body)}
+  var r=await fetch(path,o);var d=null;
+  try{d=await r.json()}catch(e){}
+  if(!r.ok){throw new Error((d&&d.error)||('HTTP '+r.status))}
+  return d;
+}
+function esc(t){var e=document.createElement('div');e.textContent=(t==null?'':t);return e.innerHTML}
+function li(html){var x=document.createElement('li');x.innerHTML=html;return x}
+function chanName(conn){return conn==='Root'?'/':(conn||'—')}
+
+function labelType(t){
+  if(t==='private')return 'ЛС';if(t==='channel')return 'канал';if(t==='broadcast')return 'броадкаст';return t||'—';
+}
+function statusLabel(mode){
+  if(mode===1)return 'away';if(mode===2)return 'question';return 'online';
+}
+
+async function loadHeader(){
+  try{
+    var o=await api('/admin/api/overview');
+    var c=o.connected?'<span class="cbadge up">соединение есть</span>':'<span class="cbadge down">нет соединения</span>';
+    document.getElementById('hdr').innerHTML=c+' · ник бота: <b>'+esc(o.nickname)+'</b> · канал: <b>'+esc(o.channel_name)+'</b>';
+    document.getElementById('botstate').textContent=
+      'Статус: '+statusLabel(o.status_mode)+(o.status_message?' — «'+o.status_message+'»':'');
+  }catch(e){document.getElementById('hdr').textContent='Ошибка: '+e.message}
+}
+async function loadChannels(){
+  var d=await api('/admin/api/channels');var ul=document.getElementById('channels');
+  if(!d.channels.length){ul.textContent='Каналов нет'}
+  else{
+    ul.innerHTML='';var sel=document.getElementById('chan-select');sel.innerHTML='';
+    var list=document.createElement('ul');list.className='plain';
+    d.channels.forEach(function(c){
+      sel.add(new Option(c.path+' ('+c.name+')',c.id));
+      list.appendChild(li(esc(c.path)+' — <span class="muted">id '+c.id+', '+(c.has_password?'с паролем':'без пароля')+', до '+c.max_users+' юзеров</span>'));
+    });
+    ul.innerHTML='';ul.appendChild(list);
+  }
+}
+async function loadUsers(){
+  var d=await api('/admin/api/users');var ul=document.getElementById('users');
+  function fill(sel){
+    sel.innerHTML='';
+    d.users.forEach(function(u){sel.add(new Option(u.username+' — '+esc(u.nickname)+' ('+esc(u.channel)+')',u.id))});
+  }
+  if(!d.users.length){ul.textContent='Никого нет онлайн'}
+  else{
+    fill(document.getElementById('pm-user'));
+    fill(document.getElementById('kick-user'));
+    fill(document.getElementById('ban-user'));
+    ul.innerHTML='';var list=document.createElement('ul');list.className='plain';
+    d.users.forEach(function(u){
+      list.appendChild(li('id '+u.id+' — <b>'+esc(u.username)+'</b> ('+esc(u.nickname)+') в канале '+esc(u.channel)+', статус '+esc(u.status)));
+    });
+    ul.innerHTML='';ul.appendChild(list);
+  }
+}
+async function loadAccounts(){
+  var d=await api('/admin/api/accounts');var el=document.getElementById('accounts');
+  if(!d.accounts.length){el.textContent='Нет аккаунтов'}
+  else{
+    var list=document.createElement('ul');list.className='plain';
+    d.accounts.forEach(function(a){
+      list.appendChild(li('<b>'+esc(a.username)+'</b> — '+esc(a.user_type)+(a.note?' · '+esc(a.note):'')));
+    });
+    el.innerHTML='';el.appendChild(list);
+  }
+}
+function msgLine(m){
+  return '<b>'+labelType(m.type)+'</b> от '+esc(m.from_user)+(m.channel?' в '+esc(m.channel):'')+': '+esc(m.content)+' <span class="muted">['+esc(m.time)+']</span>';
+}
+async function loadMessages(){
+  var d=await api('/admin/api/messages');var ul=document.getElementById('messages');
+  ul.innerHTML='';
+  if(!d.messages.length){ul.appendChild(li('Пока пусто'))}
+  else{for(var i=d.messages.length-1;i>=0;i--){ul.appendChild(li(msgLine(d.messages[i])))}}
+}
+async function loadEvents(){
+  var d=await api('/admin/api/events');var ul=document.getElementById('events');
+  ul.innerHTML='';
+  if(!d.events.length){ul.appendChild(li('Пока пусто'))}
+  else{for(var i=d.events.length-1;i>=0;i--){var e=d.events[i];ul.appendChild(li(esc(e.type)+': '+esc(e.username||'')+' '+esc(e.nickname||'')+' <span class="muted">['+esc(e.time)+']</span>'))}}
+}
+async function loadTasks(){
+  var d=await api('/admin/api/tasks');var ul=document.getElementById('tasks');ul.innerHTML='';
+  if(!d.tasks.length){ul.appendChild(li('Задач нет'))}
+  else{d.tasks.forEach(function(t){
+    var b='<button data-act="toggle" data-id="'+esc(t.id)+'">'+(t.enabled?'выкл':'вкл')+'</button> '+
+          '<button data-act="run" data-id="'+esc(t.id)+'">запустить</button> '+
+          '<button data-act="del" data-id="'+esc(t.id)+'">удалить</button>';
+    ul.appendChild(li('<b>'+esc(t.name||t.type)+'</b> ('+esc(t.type)+') '+(t.enabled?'':'— ВЫКЛ')+' · следующ. запуск: '+esc(t.next_run||'—')+' '+b));
+  })}
+}
+async function loadQueue(){
+  var d=await api('/admin/api/queue_offline_pm');var ul=document.getElementById('queue');ul.innerHTML='';
+  var keys=Object.keys(d.queue||{});
+  if(!keys.length){ul.appendChild(li('Очередь пуста'))}
+  else{keys.forEach(function(k){
+    d.queue[k].forEach(function(pm){
+      ul.appendChild(li('<b>'+esc(k)+'</b>: '+esc(pm.message)+(pm.task_name?' (задача: '+esc(pm.task_name)+')':'')+' <span class="muted">['+esc(pm.queued_at)+']</span>'));
+    });
+  })}
+}
+async function reloadAll(){await loadHeader();await loadChannels();await loadUsers();await loadAccounts();await loadMessages();await loadEvents();await loadTasks();await loadQueue()}
+
+function bindForm(id,path,cb){
+  document.getElementById(id).addEventListener('submit',async function(ev){
+    ev.preventDefault();var fd=new FormData(ev.target);var o={};fd.forEach(function(v,k){o[k]=v});
+    try{var d=await api(path,'POST',o);flash('OK: '+(d.message||'выполнено'))}
+    catch(e){flash('Ошибка: '+e.message)}
+    if(cb)cb();
+  });
+}
+document.getElementById('f-broadcast').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/broadcast','POST',{message:fd.get('message')});flash('Броадкаст отправлен')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
+document.getElementById('f-channel').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/send_channel_message','POST',{message:fd.get('message')});flash('Отправлено в канал')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
+document.getElementById('f-pm').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/send_message','POST',{user_id:fd.get('user_id'),message:fd.get('message')});flash('ЛС отправлено')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
+document.getElementById('f-status').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/status','POST',{status_mode:fd.get('status_mode'),status_message:fd.get('status_message')});flash('Статус обновлён')}catch(e){flash('Ошибка: '+e.message)}loadHeader()});
+document.getElementById('f-join').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/channels/join','POST',{channel_id:fd.get('channel_id')});flash('Вошёл в канал')}catch(e){flash('Ошибка: '+e.message)}loadHeader();loadChannels()});
+document.getElementById('f-leave').addEventListener('submit',async function(ev){ev.preventDefault();try{await api('/admin/api/channels/leave','POST',{});flash('Вышел из канала')}catch(e){flash('Ошибка: '+e.message)}loadHeader()});
+document.getElementById('f-kick').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/kick','POST',{user_id:fd.get('user_id')});flash('Кикнут')}catch(e){flash('Ошибка: '+e.message)}loadUsers()});
+document.getElementById('f-ban').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/ban','POST',{user_id:fd.get('user_id')});flash('Забанен')}catch(e){flash('Ошибка: '+e.message)}loadUsers()});
+document.getElementById('f-banuser').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/ban_username','POST',{username:fd.get('username')});flash('Аккаунт забанен')}catch(e){flash('Ошибка: '+e.message)}});
+document.getElementById('f-msgclear').addEventListener('submit',async function(ev){ev.preventDefault();try{await api('/admin/api/messages/clear','POST',{});flash('Лог сообщений очищен')}catch(e){flash('Ошибка: '+e.message)}loadMessages()});
+document.getElementById('f-evclear').addEventListener('submit',async function(ev){ev.preventDefault();try{await api('/admin/api/events/clear','POST',{});flash('События очищены')}catch(e){flash('Ошибка: '+e.message)}loadEvents()});
+document.getElementById('f-task-add').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);var o={};fd.forEach(function(v,k){o[k]=v});
+  ['channel_id','recurring_minutes','delay_min_seconds','delay_max_seconds','status_mode'].forEach(function(k){o[k]=parseInt(o[k]||0,10)||0});
+  try{await api('/admin/api/tasks','POST',o);flash('Задача создана')}catch(e){flash('Ошибка: '+e.message)}
+  ev.target.reset();loadTasks()});
+document.getElementById('f-pm-add').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);var o={};fd.forEach(function(v,k){o[k]=v});try{await api('/admin/api/queue_offline_pm','POST',o);flash('В очередь')}catch(e){flash('Ошибка: '+e.message)}ev.target.reset();loadQueue()});
+document.getElementById('f-pm-clear').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);var u=encodeURIComponent(fd.get('username'));try{await api('/admin/api/queue_offline_pm/'+u,'DELETE');flash('Очередь очищена')}catch(e){flash('Ошибка: '+e.message)}ev.target.reset();loadQueue()});
+document.getElementById('tasks').addEventListener('click',async function(ev){
+  var b=ev.target.closest('button[data-act]');if(!b)return;
+  var id=b.getAttribute('data-id');var act=b.getAttribute('data-act');
+  try{
+    if(act==='del'){await api('/admin/api/tasks/'+id,'DELETE')}
+    else{await api('/admin/api/tasks/'+id+'/'+act,'POST')}
+    flash('OK')
+  }catch(e){flash('Ошибка: '+e.message)}
+  loadTasks();
+});
+document.getElementById('live').addEventListener('change',function(){
+  if(this.checked){startLive()}else{stopLive()}
+});
+var liveTimer=null;
+function startLive(){if(liveTimer)return;liveTimer=setInterval(function(){loadMessages();loadEvents()},3000)}
+function stopLive(){clearInterval(liveTimer);liveTimer=null}
+reloadAll();
+</script>
+</body>
+</html>

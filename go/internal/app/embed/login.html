@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeamTalk — вход администратора</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:30rem;margin:2rem auto;padding:0 1rem;line-height:1.5}
+input{font-size:1rem;padding:.35rem;margin-top:.2rem}
+label{display:block;margin:.7rem 0}
+button{font-size:1rem;padding:.4rem 1rem;margin-top:.4rem}
+.alert{color:#b00020;font-weight:600}
+</style>
+</head>
+<body>
+<h1>Вход в админ-панель</h1>
+<p>Логин — по админскому аккаунту TeamTalk: ник и пароль существующей учётной записи с правами администратора.</p>
+{{if .Error}}<p class="alert" role="alert">Ошибка: {{.Error}}</p>{{end}}
+<form method="post" action="/admin/login">
+  <label>Никнейм
+    <input name="username" required autocomplete="username" autofocus>
+  </label>
+  <label>Пароль
+    <input name="password" type="password" required autocomplete="current-password">
+  </label>
+  <button type="submit">Войти</button>
+</form>
+<p><a href="/">На главную</a></p>
+</body>
+</html>
