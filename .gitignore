@@ -15,3 +15,8 @@ wheels/
 # Log files
 logs/
 *.log
+
+# Go runtime state + build artifacts
+data/
+ttserver
+go/ttserver
