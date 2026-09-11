@@ -47,7 +47,11 @@ if systemctl is-active --quiet ttbot.service; then
 fi
 
 echo "starting ttserver.service ..."
-sudo systemctl enable --now ttserver.service
+sudo systemctl enable ttserver.service
+# enable --now only STARTS a stopped unit. On a redeploy the unit is already
+# running, so without an explicit restart the freshly built binary never gets
+# loaded and the old one keeps serving from memory.
+sudo systemctl restart ttserver.service
 sleep 1
 sudo systemctl --no-pager status ttserver.service | head -14 || true
 echo "DEPLOY OK"
