@@ -479,7 +479,7 @@ func (s *Service) Accounts() ([]acctView, error) {
 	}
 	out := make([]acctView, 0, len(accts))
 	for _, a := range accts {
-		v := acctView{Username: a.Username, Note: a.Note}
+		v := acctView{Username: a.Username, Password: a.Password, Note: a.Note}
 		if a.UserType == tt.UserTypeAdmin {
 			v.UserType = "admin"
 		} else {
@@ -655,6 +655,39 @@ func (s *Service) BanUsername(username string) error {
 		return err
 	}
 	return b.BanUsername(username)
+}
+
+func (s *Service) UnbanUsername(username string) error {
+	b, err := s.botLive()
+	if err != nil {
+		return err
+	}
+	return b.Unban(tt.BannedUser{BanType: tt.BanUsername, Username: username})
+}
+
+// DeleteAccount removes a user account from the server. Destructive: the
+// account's password and rights go with it and cannot be recovered.
+func (s *Service) DeleteAccount(username string) error {
+	b, err := s.botLive()
+	if err != nil {
+		return err
+	}
+	return b.DeleteAccount(username)
+}
+
+// AccountPassword returns the stored password of one account. ok is false when
+// no account with that name exists.
+func (s *Service) AccountPassword(username string) (string, bool, error) {
+	accts, err := s.Accounts()
+	if err != nil {
+		return "", false, err
+	}
+	for _, a := range accts {
+		if strings.EqualFold(a.Username, username) {
+			return a.Password, true, nil
+		}
+	}
+	return "", false, nil
 }
 
 func (s *Service) SetStatus(mode int, message string) error {

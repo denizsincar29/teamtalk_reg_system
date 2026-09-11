@@ -23,9 +23,12 @@ type evRec struct {
 	Time     string `json:"time"`
 }
 
-// acctView is a user account as returned by the admin accounts API.
+// acctView is a user account as returned by the admin accounts API. It carries
+// the password because the TeamTalk server hands it to an admin outright in the
+// account listing, and the panel needs it to build .tt files and tt:// links.
 type acctView struct {
 	Username string `json:"username"`
+	Password string `json:"password"`
 	UserType string `json:"user_type"` // "admin" or "default"
 	Note     string `json:"note"`
 }

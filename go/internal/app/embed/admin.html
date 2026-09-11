@@ -10,7 +10,8 @@ h2{border-bottom:1px solid #ccc;padding-bottom:.2rem;margin-top:1.8rem}
 form.inline, .row{display:inline-block;margin:.25rem .5rem .25rem 0}
 label{display:inline-block;margin:.2rem .4rem .2rem 0}
 select,input[type=text],input[type=password],input[type=number],input[type=datetime-local]{font-size:.95rem;padding:.25rem;margin:.15rem .2rem .15rem 0}
-button{font-size:.95rem;padding:.3rem .7rem;margin:.15rem .2rem .15rem 0}
+button,a.btn{font-size:.95rem;padding:.3rem .7rem;margin:.15rem .2rem .15rem 0}
+a.btn{display:inline-block;text-decoration:none;border:1px solid #888;border-radius:.3rem;color:#000}
 ul.plain{list-style:none;padding:0;margin:.3rem 0}
 ul.plain li{border-bottom:1px solid #eee;padding:.25rem .1rem}
 .cbadge{display:inline-block;border-radius:.8rem;padding:.05rem .6rem;font-size:.85rem}
@@ -66,6 +67,8 @@ legend{font-weight:600}
   </form>
 
   <h2>Аккаунты</h2>
+  <p class="hint">Пароли отдаёт сам сервер TeamTalk — он показывает их администратору в списке аккаунтов. Файл .tt и ссылка tt:// собираются на месте из этого пароля, у нас ничего не хранится.</p>
+  <p><label>Ссылка для копирования: <input type="text" id="tt-clip" readonly size="52" aria-label="Готовая ссылка tt:// для копирования"></label></p>
   <p id="accounts">—</p>
 </section>
 
@@ -301,10 +304,44 @@ async function loadAccounts(){
   if(!d.accounts.length){el.textContent='Нет аккаунтов';return}
   var list=document.createElement('ul');list.className='plain';
   d.accounts.forEach(function(a){
-    list.appendChild(li('<b>'+esc(a.username)+'</b> — '+esc(a.user_type)+(a.note?' · '+esc(a.note):'')));
+    var u=esc(a.username),href=encodeURIComponent(a.username);
+    var pw=a.password?'пароль: <code>'+esc(a.password)+'</code>':'<span class="muted">пароль сервер не отдал</span>';
+    // .tt отдаётся обычной ссылкой: её можно и нажать, и «сохранить ссылку как».
+    var acts='<a class="btn" href="/admin/api/accounts/'+href+'/ttfile" download="'+u+'.tt">Скачать .tt</a> '+
+      '<button data-act="tturl" data-user="'+u+'" aria-label="Скопировать ссылку tt:// для '+u+'">Скопировать tt://</button> '+
+      '<button data-act="ban" data-user="'+u+'" aria-label="Забанить аккаунт '+u+'">Забанить</button> '+
+      '<button data-act="unban" data-user="'+u+'" aria-label="Снять бан с аккаунта '+u+'">Разбанить</button> '+
+      '<button data-act="del" data-user="'+u+'" aria-label="Удалить аккаунт '+u+'">Удалить</button>';
+    list.appendChild(li('<b>'+u+'</b> — '+esc(a.user_type)+(a.note?' · '+esc(a.note):'')+' · '+pw+'<br>'+acts));
   });
   el.innerHTML='';el.appendChild(list);
 }
+// Действия над аккаунтом: копирование ссылки, бан, разбан, удаление.
+document.getElementById('accounts').addEventListener('click',async function(ev){
+  var b=ev.target.closest('button[data-act]');if(!b)return;
+  var user=b.getAttribute('data-user'),act=b.getAttribute('data-act');
+  var path='/admin/api/accounts/'+encodeURIComponent(user);
+  try{
+    if(act==='tturl'){
+      var d=await api(path+'/tturl');
+      var f=document.getElementById('tt-clip');f.value=d.url;f.focus();f.select();
+      var copied=false;
+      try{await navigator.clipboard.writeText(d.url);copied=true}catch(e){}
+      flash(copied?'Ссылка скопирована в буфер обмена':'Ссылка лежит в поле «Ссылка для копирования»');
+      announce(copied?'Ссылка tt:// скопирована':'Ссылка tt:// в поле для копирования');
+      return;
+    }
+    if(act==='del'){
+      if(!confirm('Удалить аккаунт '+user+'? Это необратимо: вместе с аккаунтом исчезнут его пароль и права.'))return;
+      await api(path,'DELETE');flash('Аккаунт '+user+' удалён');announce('Аккаунт '+user+' удалён');
+    }else if(act==='ban'){
+      await api(path+'/ban','POST',{});flash('Аккаунт '+user+' забанен');announce('Аккаунт '+user+' забанен');
+    }else if(act==='unban'){
+      await api(path+'/unban','POST',{});flash('Бан с '+user+' снят');announce('Бан с аккаунта '+user+' снят');
+    }
+  }catch(e){flash('Ошибка: '+e.message)}
+  loadAccounts();
+});
 function msgLine(m){
   return '<b>'+labelType(m.type)+'</b> от '+esc(m.from_user)+(m.channel?' в '+esc(m.channel):'')+': '+esc(m.content)+' <span class="muted">['+esc(m.time)+']</span>';
 }

@@ -127,6 +127,93 @@ func (s *Server) apiAccounts(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"accounts": accts})
 }
 
+// accountByName resolves the account named in the path, or writes the error
+// response and reports ok=false. Used by the per-account actions below.
+func (s *Server) accountByName(w http.ResponseWriter, r *http.Request) (name, password string, ok bool) {
+	name = strings.TrimSpace(r.PathValue("username"))
+	if name == "" {
+		errJSON(w, http.StatusBadRequest, "username required")
+		return "", "", false
+	}
+	pw, found, err := s.svc.AccountPassword(name)
+	if err != nil {
+		errJSON(w, http.StatusBadGateway, err.Error())
+		return "", "", false
+	}
+	if !found {
+		errJSON(w, http.StatusNotFound, "account not found")
+		return "", "", false
+	}
+	return name, pw, true
+}
+
+// apiAccountTTFile streams a ready-to-use .tt file for one account. The file is
+// generated on the fly from the password the server itself reports, so nothing
+// is stored and the file is never stale.
+func (s *Server) apiAccountTTFile(w http.ResponseWriter, r *http.Request) {
+	name, pw, ok := s.accountByName(w, r)
+	if !ok {
+		return
+	}
+	w.Header().Set("Content-Type", "application/xml")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name+".tt"))
+	_, _ = w.Write([]byte(ttFileXML(s.cfg, name, pw)))
+}
+
+// apiAccountTTURL returns the tt:// URL for one account, for the copy button.
+func (s *Server) apiAccountTTURL(w http.ResponseWriter, r *http.Request) {
+	name, pw, ok := s.accountByName(w, r)
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"username": name,
+		"url":      ttURL(s.cfg, name, pw),
+	})
+}
+
+// apiAccountBan bans the account name, so it holds even while the user is
+// offline (an online-only ban would be gone after the next kick).
+func (s *Server) apiAccountBan(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimSpace(r.PathValue("username"))
+	if name == "" {
+		errJSON(w, http.StatusBadRequest, "username required")
+		return
+	}
+	if err := s.svc.BanUsername(name); err != nil {
+		errJSON(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	okJSON(w, nil)
+}
+
+func (s *Server) apiAccountUnban(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimSpace(r.PathValue("username"))
+	if name == "" {
+		errJSON(w, http.StatusBadRequest, "username required")
+		return
+	}
+	if err := s.svc.UnbanUsername(name); err != nil {
+		errJSON(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	okJSON(w, nil)
+}
+
+// apiAccountDelete removes the account permanently.
+func (s *Server) apiAccountDelete(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimSpace(r.PathValue("username"))
+	if name == "" {
+		errJSON(w, http.StatusBadRequest, "username required")
+		return
+	}
+	if err := s.svc.DeleteAccount(name); err != nil {
+		errJSON(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	okJSON(w, nil)
+}
+
 func (s *Server) apiUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.svc.Users()
 	if err != nil {
