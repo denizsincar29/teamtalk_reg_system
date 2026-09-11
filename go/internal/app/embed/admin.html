@@ -73,7 +73,7 @@ legend{font-weight:600}
 <section class="panel" id="panel-chat" role="tabpanel" aria-labelledby="tab-chat" tabindex="0" hidden>
   <h2>Отправка сообщений</h2>
   <form class="inline" id="f-broadcast">
-    <label>Броадкаст всем: <input type="text" name="message" size="40" required></label>
+    <label>Сетевое сообщение (всем): <input type="text" name="message" size="40" required></label>
     <button>Отправить</button>
   </form>
   <form class="inline" id="f-channel">
@@ -143,7 +143,7 @@ legend{font-weight:600}
     <legend>Параметры задачи</legend>
     <label>Тип:
       <select name="type" id="task-type">
-        <option value="broadcast">Броадкаст всем</option>
+        <option value="broadcast">Сетевое сообщение</option>
         <option value="channel_message">Сообщение в канал</option>
         <option value="pm_online">Личное сообщение (если онлайн)</option>
         <option value="on_user_login">Личное сообщение при входе</option>
@@ -191,14 +191,14 @@ function esc(t){var e=document.createElement('div');e.textContent=(t==null?'':t)
 function li(html){var x=document.createElement('li');x.innerHTML=html;return x}
 
 function labelType(t){
-  if(t==='private')return 'ЛС';if(t==='channel')return 'канал';if(t==='broadcast')return 'броадкаст';return t||'—';
+  if(t==='private')return 'ЛС';if(t==='channel')return 'канал';if(t==='broadcast')return 'сетевое сообщение';return t||'—';
 }
 function statusLabel(mode){
   if(mode===1)return 'away';if(mode===2)return 'question';return 'online';
 }
 function labelTaskType(t){
   switch(t){
-    case 'broadcast':return 'броадкаст';
+    case 'broadcast':return 'сетевое сообщение';
     case 'channel_message':return 'в канал';
     case 'pm_online':return 'ЛС онлайн';
     case 'on_user_login':return 'при входе';
@@ -344,7 +344,7 @@ async function loadQueue(){
 
 /* ---------- шедулер: поля по типу задачи ---------- */
 var TASK_HINTS={
-  broadcast:'Броадкаст всем, кто онлайн. Нужно сообщение; время или период обязательны.',
+  broadcast:'Сетевое сообщение — всем, кто онлайн, во все каналы. Нужен текст; время или период обязательны.',
   channel_message:'Сообщение в канал. Если канал не выбран — уйдёт в текущий канал бота.',
   pm_online:'Личное сообщение, только если пользователь сейчас онлайн. Если оффлайн — пропустится молча.',
   on_user_login:'Личное сообщение при входе пользователя. Время и период не нужны — задача срабатывает по событию. Пустой ник = любой пользователь.',
@@ -374,7 +374,7 @@ function bindForm(id,path,cb){
     if(cb)cb();
   });
 }
-document.getElementById('f-broadcast').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/broadcast','POST',{message:fd.get('message')});flash('Броадкаст отправлен')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
+document.getElementById('f-broadcast').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/broadcast','POST',{message:fd.get('message')});flash('Сетевое сообщение отправлено')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
 document.getElementById('f-channel').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/send_channel_message','POST',{message:fd.get('message')});flash('Отправлено в канал')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
 document.getElementById('f-pm').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/send_message','POST',{user_id:fd.get('user_id'),message:fd.get('message')});flash('ЛС отправлено')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
 document.getElementById('f-status').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/status','POST',{status_mode:fd.get('status_mode'),status_message:fd.get('status_message')});flash('Статус обновлён')}catch(e){flash('Ошибка: '+e.message)}loadOverview()});
