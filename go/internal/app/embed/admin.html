@@ -19,6 +19,16 @@ ul.plain li{border-bottom:1px solid #eee;padding:.25rem .1rem}
 #statusline{position:fixed;bottom:.5rem;right:1rem;background:#fff;border:1px solid #999;padding:.3rem .7rem;border-radius:.4rem;max-width:40%;box-shadow:0 1px 3px #0003}
 fieldset{border:1px solid #ccc;border-radius:.4rem;margin:.6rem 0;padding:.5rem .8rem}
 legend{font-weight:600}
+[hidden]{display:none !important}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Вкладки: настоящий ARIA-tablist, чтобы экранный диктор читал их как вкладки */
+.tablist{display:flex;flex-wrap:wrap;gap:.25rem;margin:.9rem 0 0;border-bottom:2px solid #bbb}
+.tab{font-size:1rem;padding:.45rem .9rem;margin:0;background:#f4f4f4;border:1px solid #bbb;border-bottom:none;border-radius:.4rem .4rem 0 0;cursor:pointer}
+.tab[aria-selected="true"]{background:#fff;font-weight:600;border-bottom:2px solid #fff;margin-bottom:-2px}
+.tab:focus{outline:3px solid #1a73e8;outline-offset:-2px}
+.panel{padding-top:.2rem}
+.hint{color:#666;font-size:.88rem;margin:.2rem 0 .4rem}
 </style>
 </head>
 <body>
@@ -28,113 +38,147 @@ legend{font-weight:600}
   <p><a href="/admin/logout">Выйти</a> · <label><input type="checkbox" id="live"> авто-обновление сообщений</label></p>
 </header>
 <div id="statusline" role="status" aria-live="polite"></div>
+<div id="sr-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<h2>Отправка сообщений</h2>
-<form class="inline" id="f-broadcast">
-  <label>Броадкаст всем: <input type="text" name="message" size="40" required></label>
-  <button>Отправить</button>
-</form>
-<form class="inline" id="f-channel">
-  <label>В текущий канал: <input type="text" name="message" size="40" required></label>
-  <button>Отправить</button>
-</form>
-<form class="inline" id="f-pm">
-  <label>Личное сообщение пользователю:</label>
-  <select name="user_id" id="pm-user"></select>
-  <input type="text" name="message" size="30" required>
-  <button>Отправить</button>
-</form>
+<div class="tablist" role="tablist" aria-label="Разделы админ-панели">
+  <button class="tab" id="tab-users"  role="tab" aria-selected="true"  aria-controls="panel-users"  accesskey="1" title="Пользователи (Alt+1)">Пользователи</button>
+  <button class="tab" id="tab-chat"   role="tab" aria-selected="false" aria-controls="panel-chat"   accesskey="2" title="Чат (Alt+2)">Чат</button>
+  <button class="tab" id="tab-server" role="tab" aria-selected="false" aria-controls="panel-server" accesskey="3" title="Сервер (Alt+3)">Сервер</button>
+  <button class="tab" id="tab-tasks"  role="tab" aria-selected="false" aria-controls="panel-tasks"  accesskey="4" title="Задачи (Alt+4)">Задачи</button>
+</div>
+<p class="hint">Стрелки влево-вправо переключают вкладки, Alt+1…Alt+4 — сразу на нужную.</p>
 
-<h2>Состояние бота</h2>
-<p id="botstate">—</p>
-<form class="inline" id="f-status">
-  <label>Режим:
-    <select name="status_mode">
-      <option value="0">online</option>
-      <option value="1">away</option>
-      <option value="2">question</option>
-    </select>
-  </label>
-  <label>Статус-сообщение: <input type="text" name="status_message" size="30"></label>
-  <button>Применить</button>
-</form>
+<!-- ============ Пользователи ============ -->
+<section class="panel" id="panel-users" role="tabpanel" aria-labelledby="tab-users" tabindex="0">
+  <h2>Пользователи онлайн</h2>
+  <p id="users">—</p>
+  <form class="inline" id="f-kick">
+    <label>Пользователь: <select name="user_id" id="kick-user"></select></label>
+    <button>Кикнуть</button>
+  </form>
+  <form class="inline" id="f-ban">
+    <label>Забанить пользователя: <select name="user_id" id="ban-user"></select></label>
+    <button>Забанить</button>
+  </form>
+  <form class="inline" id="f-banuser">
+    <label>Бан по нику: <input type="text" name="username" required></label>
+    <button>Забанить аккаунт</button>
+  </form>
 
-<h2>Каналы</h2>
-<p id="channels">—</p>
-<form class="inline" id="f-join">
-  <label>Канал: <select name="channel_id" id="chan-select"></select></label>
-  <button>Войти в канал</button>
-</form>
-<form class="inline" id="f-leave"><button>Покинуть канал</button></form>
+  <h2>Аккаунты</h2>
+  <p id="accounts">—</p>
+</section>
 
-<h2>Пользователи онлайн</h2>
-<p id="users">—</p>
-<form class="inline" id="f-kick">
-  <label>Пользователь: <select name="user_id" id="kick-user"></select></label>
-  <button>Кикнуть</button>
-</form>
-<form class="inline" id="f-ban">
-  <select name="user_id" id="ban-user"></select>
-  <button>Забанить</button>
-</form>
-<form class="inline" id="f-banuser">
-  <label>Бан по нику: <input type="text" name="username" required></label>
-  <button>Забанить аккаунт</button>
-</form>
+<!-- ============ Чат ============ -->
+<section class="panel" id="panel-chat" role="tabpanel" aria-labelledby="tab-chat" tabindex="0" hidden>
+  <h2>Отправка сообщений</h2>
+  <form class="inline" id="f-broadcast">
+    <label>Броадкаст всем: <input type="text" name="message" size="40" required></label>
+    <button>Отправить</button>
+  </form>
+  <form class="inline" id="f-channel">
+    <label>В текущий канал: <input type="text" name="message" size="40" required></label>
+    <button>Отправить</button>
+  </form>
+  <form class="inline" id="f-pm">
+    <label>Личное сообщение пользователю: <select name="user_id" id="pm-user"></select></label>
+    <input type="text" name="message" size="30" required>
+    <button>Отправить</button>
+  </form>
 
-<h2>Аккаунты</h2>
-<p id="accounts">—</p>
+  <h2>Лог сообщений</h2>
+  <form class="inline" id="f-msgclear"><button>Очистить лог</button></form>
+  <ul class="plain" id="messages"><li>—</li></ul>
 
-<h2>Лог сообщений</h2>
-<form class="inline" id="f-msgclear"><button>Очистить лог</button></form>
-<ul class="plain" id="messages"><li>—</li></ul>
+  <h2>Оффлайн личные сообщения</h2>
+  <p class="hint">Сообщение уйдёт пользователю, когда он войдёт на сервер.</p>
+  <form class="inline" id="f-pm-add">
+    <label>Ник: <input type="text" name="username" required size="14"></label>
+    <label>Сообщение: <input type="text" name="message" required size="30"></label>
+    <label>Задача: <input type="text" name="task_name" size="12"></label>
+    <button>Поставить в очередь</button>
+  </form>
+  <form class="inline" id="f-pm-clear">
+    <label>Ник: <input type="text" name="username" required size="14"></label>
+    <button>Очистить очередь ника</button>
+  </form>
+  <ul class="plain" id="queue"><li>—</li></ul>
+</section>
 
-<h2>События сервера</h2>
-<form class="inline" id="f-evclear"><button>Очистить</button></form>
-<ul class="plain" id="events"><li>—</li></ul>
+<!-- ============ Сервер ============ -->
+<section class="panel" id="panel-server" role="tabpanel" aria-labelledby="tab-server" tabindex="0" hidden>
+  <h2>Состояние бота</h2>
+  <p id="botstate">—</p>
+  <form class="inline" id="f-status">
+    <label>Режим:
+      <select name="status_mode">
+        <option value="0">online</option>
+        <option value="1">away</option>
+        <option value="2">question</option>
+      </select>
+    </label>
+    <label>Статус-сообщение: <input type="text" name="status_message" size="30"></label>
+    <button>Применить</button>
+  </form>
 
-<h2>Задачи</h2>
-<form class="inline" id="f-task-add">
-  <fieldset>
-  <legend>Новая задача</legend>
-  <label>Тип:
-    <select name="type">
-      <option value="broadcast">broadcast</option>
-      <option value="channel_message">channel_message</option>
-      <option value="pm_online">pm_online</option>
-      <option value="on_user_login">on_user_login</option>
-      <option value="status_change">status_change</option>
-    </select>
-  </label>
-  <label>Имя: <input type="text" name="name" size="14"></label>
-  <label>Сообщение: <input type="text" name="message" size="34"></label>
-  <label>Целевой ник: <input type="text" name="target_username" size="14"></label>
-  <label>Время (ГГГГ-ММ-ДД ЧЧ:ММ или дата): <input type="text" name="scheduled_time" size="20" placeholder="2026-09-05 09:00"></label>
-  <label>Каждые N минут: <input type="number" name="recurring_minutes" size="4" value="0" min="0"></label>
-  <label>Задержка мин-макс (сек): <input type="number" name="delay_min_seconds" size="4" value="0" min="0"> — <input type="number" name="delay_max_seconds" size="4" value="0" min="0"></label>
-  <label>Режим статуса (для status_change): <input type="number" name="status_mode" size="3" value="0" min="0" max="2"></label>
-  <button>Создать</button>
-  </fieldset>
-</form>
-<ul class="plain" id="tasks"><li>—</li></ul>
+  <h2>Каналы</h2>
+  <p id="channels">—</p>
+  <form class="inline" id="f-join">
+    <label>Канал: <select name="channel_id" id="chan-select"></select></label>
+    <button>Войти в канал</button>
+  </form>
+  <form class="inline" id="f-leave"><button>Покинуть канал</button></form>
 
-<h2>Оффлайн личные сообщения</h2>
-<form class="inline" id="f-pm-add">
-  <label>Ник: <input type="text" name="username" required size="14"></label>
-  <label>Сообщение: <input type="text" name="message" required size="30"></label>
-  <label>Задача: <input type="text" name="task_name" size="12"></label>
-  <button>Поставить в очередь</button>
-</form>
-<form class="inline" id="f-pm-clear">
-  <label>Ник: <input type="text" name="username" required size="14"></label>
-  <button>Очистить очередь ника</button>
-</form>
-<ul class="plain" id="queue"><li>—</li></ul>
+  <h2>События сервера</h2>
+  <form class="inline" id="f-evclear"><button>Очистить</button></form>
+  <ul class="plain" id="events"><li>—</li></ul>
+</section>
+
+<!-- ============ Задачи ============ -->
+<section class="panel" id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" tabindex="0" hidden>
+  <h2>Новая задача</h2>
+  <p class="hint">Поля показываются по выбранному типу: лишнее скрыто и не отправляется.</p>
+  <form id="f-task-add">
+    <fieldset>
+    <legend>Параметры задачи</legend>
+    <label>Тип:
+      <select name="type" id="task-type">
+        <option value="broadcast">Броадкаст всем</option>
+        <option value="channel_message">Сообщение в канал</option>
+        <option value="pm_online">Личное сообщение (если онлайн)</option>
+        <option value="on_user_login">Личное сообщение при входе</option>
+        <option value="status_change">Смена статуса бота</option>
+      </select>
+    </label>
+    <label>Имя задачи: <input type="text" name="name" size="14"></label>
+    <label>Сообщение: <input type="text" name="message" size="34"></label>
+    <label data-types="channel_message">Канал: <select name="channel_id" id="task-channel"><option value="0">— остаться в текущем —</option></select></label>
+    <label data-types="pm_online,on_user_login">Целевой ник: <input type="text" name="target_username" size="14"></label>
+    <label data-types="broadcast,channel_message,pm_online,status_change">Время (ГГГГ-ММ-ДД ЧЧ:ММ или дата): <input type="text" name="scheduled_time" size="20" placeholder="2026-09-05 09:00"></label>
+    <label data-types="broadcast,channel_message,pm_online,status_change">Каждые N минут: <input type="number" name="recurring_minutes" size="4" value="0" min="0"></label>
+    <label data-types="on_user_login">Задержка мин-макс (сек): <input type="number" name="delay_min_seconds" size="4" value="0" min="0"> — <input type="number" name="delay_max_seconds" size="4" value="0" min="0"></label>
+    <label data-types="status_change">Режим статуса:
+      <select name="status_mode">
+        <option value="0">online</option>
+        <option value="1">away</option>
+        <option value="2">question</option>
+      </select>
+    </label>
+    <button>Создать</button>
+    </fieldset>
+  </form>
+  <p id="task-hint" class="hint"></p>
+
+  <h2>Список задач</h2>
+  <ul class="plain" id="tasks"><li>—</li></ul>
+</section>
 
 <script>
 "use strict";
 var STATUSLINE=document.getElementById('statusline');
+var SRSTATUS=document.getElementById('sr-status');
 function flash(s){STATUSLINE.textContent=s;clearTimeout(flash._t);flash._t=setTimeout(function(){STATUSLINE.textContent='';},4000)}
+function announce(s){SRSTATUS.textContent='';setTimeout(function(){SRSTATUS.textContent=s},60)}
 async function api(path,method,body){
   var o={method:method||'GET',headers:{}};
   if(body){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body)}
@@ -145,7 +189,6 @@ async function api(path,method,body){
 }
 function esc(t){var e=document.createElement('div');e.textContent=(t==null?'':t);return e.innerHTML}
 function li(html){var x=document.createElement('li');x.innerHTML=html;return x}
-function chanName(conn){return conn==='Root'?'/':(conn||'—')}
 
 function labelType(t){
   if(t==='private')return 'ЛС';if(t==='channel')return 'канал';if(t==='broadcast')return 'броадкаст';return t||'—';
@@ -153,8 +196,64 @@ function labelType(t){
 function statusLabel(mode){
   if(mode===1)return 'away';if(mode===2)return 'question';return 'online';
 }
+function labelTaskType(t){
+  switch(t){
+    case 'broadcast':return 'броадкаст';
+    case 'channel_message':return 'в канал';
+    case 'pm_online':return 'ЛС онлайн';
+    case 'on_user_login':return 'при входе';
+    case 'status_change':return 'статус';
+    case 'create_channel':return 'канал (не реализовано)';
+  }
+  return t||'—';
+}
 
-async function loadHeader(){
+/* ---------- вкладки ---------- */
+var TABS=['users','chat','server','tasks'];
+var TAB_LABELS={users:'Пользователи',chat:'Чат',server:'Сервер',tasks:'Задачи'};
+var activeTab='users';
+
+function showTab(name,focus){
+  if(TABS.indexOf(name)<0)name='users';
+  activeTab=name;
+  TABS.forEach(function(n){
+    var t=document.getElementById('tab-'+n),p=document.getElementById('panel-'+n);
+    var on=(n===name);
+    t.setAttribute('aria-selected',on?'true':'false');
+    t.tabIndex=on?0:-1;
+    p.hidden=!on;
+  });
+  if(focus){document.getElementById('tab-'+name).focus()}
+  loadTab(name);
+}
+function loadTab(name){
+  if(name==='users'){loadUsers();loadAccounts()}
+  else if(name==='chat'){loadUsers();loadMessages();loadQueue()}
+  else if(name==='server'){loadOverview();loadChannels();loadEvents()}
+  else if(name==='tasks'){loadChannels();loadTasks()}
+}
+TABS.forEach(function(n){
+  document.getElementById('tab-'+n).addEventListener('click',function(){showTab(n)});
+});
+document.querySelector('.tablist').addEventListener('keydown',function(ev){
+  var i=TABS.indexOf(activeTab);
+  if(ev.key==='ArrowRight'||ev.key==='ArrowDown'){i=(i+1)%TABS.length}
+  else if(ev.key==='ArrowLeft'||ev.key==='ArrowUp'){i=(i-1+TABS.length)%TABS.length}
+  else if(ev.key==='Home'){i=0}
+  else if(ev.key==='End'){i=TABS.length-1}
+  else return;
+  ev.preventDefault();
+  showTab(TABS[i],true);
+  announce('Вкладка '+TAB_LABELS[TABS[i]]);
+});
+document.addEventListener('keydown',function(ev){
+  if(!ev.altKey||ev.ctrlKey||ev.metaKey)return;
+  var n=parseInt(ev.key,10);
+  if(n>=1&&n<=TABS.length){ev.preventDefault();showTab(TABS[n-1],true);announce('Вкладка '+TAB_LABELS[TABS[n-1]])}
+});
+
+/* ---------- загрузка данных ---------- */
+async function loadOverview(){
   try{
     var o=await api('/admin/api/overview');
     var c=o.connected?'<span class="cbadge up">соединение есть</span>':'<span class="cbadge down">нет соединения</span>';
@@ -165,16 +264,19 @@ async function loadHeader(){
 }
 async function loadChannels(){
   var d=await api('/admin/api/channels');var ul=document.getElementById('channels');
-  if(!d.channels.length){ul.textContent='Каналов нет'}
-  else{
-    ul.innerHTML='';var sel=document.getElementById('chan-select');sel.innerHTML='';
-    var list=document.createElement('ul');list.className='plain';
-    d.channels.forEach(function(c){
-      sel.add(new Option(c.path+' ('+c.name+')',c.id));
-      list.appendChild(li(esc(c.path)+' — <span class="muted">id '+c.id+', '+(c.has_password?'с паролем':'без пароля')+', до '+c.max_users+' юзеров</span>'));
-    });
-    ul.innerHTML='';ul.appendChild(list);
-  }
+  var sel=document.getElementById('chan-select');
+  var tsel=document.getElementById('task-channel');
+  var keep=tsel.value;
+  sel.innerHTML='';tsel.innerHTML='<option value="0">— остаться в текущем —</option>';
+  if(!d.channels.length){ul.textContent='Каналов нет';return}
+  var list=document.createElement('ul');list.className='plain';
+  d.channels.forEach(function(c){
+    sel.add(new Option(c.path+' ('+c.name+')',c.id));
+    tsel.add(new Option(c.path+' ('+c.name+')',c.id));
+    list.appendChild(li(esc(c.path)+' — <span class="muted">id '+c.id+', '+(c.has_password?'с паролем':'без пароля')+', до '+c.max_users+' юзеров</span>'));
+  });
+  if(keep){tsel.value=keep}
+  ul.innerHTML='';ul.appendChild(list);
 }
 async function loadUsers(){
   var d=await api('/admin/api/users');var ul=document.getElementById('users');
@@ -187,7 +289,7 @@ async function loadUsers(){
     fill(document.getElementById('pm-user'));
     fill(document.getElementById('kick-user'));
     fill(document.getElementById('ban-user'));
-    ul.innerHTML='';var list=document.createElement('ul');list.className='plain';
+    var list=document.createElement('ul');list.className='plain';
     d.users.forEach(function(u){
       list.appendChild(li('id '+u.id+' — <b>'+esc(u.username)+'</b> ('+esc(u.nickname)+') в канале '+esc(u.channel)+', статус '+esc(u.status)));
     });
@@ -196,14 +298,12 @@ async function loadUsers(){
 }
 async function loadAccounts(){
   var d=await api('/admin/api/accounts');var el=document.getElementById('accounts');
-  if(!d.accounts.length){el.textContent='Нет аккаунтов'}
-  else{
-    var list=document.createElement('ul');list.className='plain';
-    d.accounts.forEach(function(a){
-      list.appendChild(li('<b>'+esc(a.username)+'</b> — '+esc(a.user_type)+(a.note?' · '+esc(a.note):'')));
-    });
-    el.innerHTML='';el.appendChild(list);
-  }
+  if(!d.accounts.length){el.textContent='Нет аккаунтов';return}
+  var list=document.createElement('ul');list.className='plain';
+  d.accounts.forEach(function(a){
+    list.appendChild(li('<b>'+esc(a.username)+'</b> — '+esc(a.user_type)+(a.note?' · '+esc(a.note):'')));
+  });
+  el.innerHTML='';el.appendChild(list);
 }
 function msgLine(m){
   return '<b>'+labelType(m.type)+'</b> от '+esc(m.from_user)+(m.channel?' в '+esc(m.channel):'')+': '+esc(m.content)+' <span class="muted">['+esc(m.time)+']</span>';
@@ -222,13 +322,14 @@ async function loadEvents(){
 }
 async function loadTasks(){
   var d=await api('/admin/api/tasks');var ul=document.getElementById('tasks');ul.innerHTML='';
-  if(!d.tasks.length){ul.appendChild(li('Задач нет'))}
-  else{d.tasks.forEach(function(t){
-    var b='<button data-act="toggle" data-id="'+esc(t.id)+'">'+(t.enabled?'выкл':'вкл')+'</button> '+
-          '<button data-act="run" data-id="'+esc(t.id)+'">запустить</button> '+
-          '<button data-act="del" data-id="'+esc(t.id)+'">удалить</button>';
-    ul.appendChild(li('<b>'+esc(t.name||t.type)+'</b> ('+esc(t.type)+') '+(t.enabled?'':'— ВЫКЛ')+' · следующ. запуск: '+esc(t.next_run||'—')+' '+b));
-  })}
+  if(!d.tasks.length){ul.appendChild(li('Задач нет'));return}
+  d.tasks.forEach(function(t){
+    var title=(t.name||labelTaskType(t.type));
+    var b='<button data-act="toggle" data-id="'+esc(t.id)+'" aria-label="'+(t.enabled?'Выключить':'Включить')+' задачу '+esc(title)+'">'+(t.enabled?'выкл':'вкл')+'</button> '+
+          '<button data-act="run" data-id="'+esc(t.id)+'" aria-label="Запустить сейчас задачу '+esc(title)+'">запустить</button> '+
+          '<button data-act="del" data-id="'+esc(t.id)+'" aria-label="Удалить задачу '+esc(title)+'">удалить</button>';
+    ul.appendChild(li('<b>'+esc(title)+'</b> ('+esc(labelTaskType(t.type))+') '+(t.enabled?'':'— ВЫКЛ')+' · следующ. запуск: '+esc(t.next_run||'—')+' '+b));
+  });
 }
 async function loadQueue(){
   var d=await api('/admin/api/queue_offline_pm');var ul=document.getElementById('queue');ul.innerHTML='';
@@ -240,8 +341,31 @@ async function loadQueue(){
     });
   })}
 }
-async function reloadAll(){await loadHeader();await loadChannels();await loadUsers();await loadAccounts();await loadMessages();await loadEvents();await loadTasks();await loadQueue()}
 
+/* ---------- шедулер: поля по типу задачи ---------- */
+var TASK_HINTS={
+  broadcast:'Броадкаст всем, кто онлайн. Нужно сообщение; время или период обязательны.',
+  channel_message:'Сообщение в канал. Если канал не выбран — уйдёт в текущий канал бота.',
+  pm_online:'Личное сообщение, только если пользователь сейчас онлайн. Если оффлайн — пропустится молча.',
+  on_user_login:'Личное сообщение при входе пользователя. Время и период не нужны — задача срабатывает по событию. Пустой ник = любой пользователь.',
+  status_change:'Смена статуса бота. Сообщение — текст статуса, режим — online/away/question.'
+};
+var taskTypeSel=document.getElementById('task-type');
+function syncTaskFields(){
+  var type=taskTypeSel.value;
+  var groups=document.querySelectorAll('#f-task-add [data-types]');
+  for(var i=0;i<groups.length;i++){
+    var g=groups[i];
+    g.hidden=g.getAttribute('data-types').split(',').indexOf(type)<0;
+  }
+  document.getElementById('task-hint').textContent=TASK_HINTS[type]||'';
+}
+taskTypeSel.addEventListener('change',function(){
+  syncTaskFields();
+  announce('Тип задачи: '+taskTypeSel.options[taskTypeSel.selectedIndex].text);
+});
+
+/* ---------- привязка форм ---------- */
 function bindForm(id,path,cb){
   document.getElementById(id).addEventListener('submit',async function(ev){
     ev.preventDefault();var fd=new FormData(ev.target);var o={};fd.forEach(function(v,k){o[k]=v});
@@ -253,18 +377,28 @@ function bindForm(id,path,cb){
 document.getElementById('f-broadcast').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/broadcast','POST',{message:fd.get('message')});flash('Броадкаст отправлен')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
 document.getElementById('f-channel').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/send_channel_message','POST',{message:fd.get('message')});flash('Отправлено в канал')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
 document.getElementById('f-pm').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/send_message','POST',{user_id:fd.get('user_id'),message:fd.get('message')});flash('ЛС отправлено')}catch(e){flash('Ошибка: '+e.message)}this.reset()});
-document.getElementById('f-status').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/status','POST',{status_mode:fd.get('status_mode'),status_message:fd.get('status_message')});flash('Статус обновлён')}catch(e){flash('Ошибка: '+e.message)}loadHeader()});
-document.getElementById('f-join').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/channels/join','POST',{channel_id:fd.get('channel_id')});flash('Вошёл в канал')}catch(e){flash('Ошибка: '+e.message)}loadHeader();loadChannels()});
-document.getElementById('f-leave').addEventListener('submit',async function(ev){ev.preventDefault();try{await api('/admin/api/channels/leave','POST',{});flash('Вышел из канала')}catch(e){flash('Ошибка: '+e.message)}loadHeader()});
+document.getElementById('f-status').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/status','POST',{status_mode:fd.get('status_mode'),status_message:fd.get('status_message')});flash('Статус обновлён')}catch(e){flash('Ошибка: '+e.message)}loadOverview()});
+document.getElementById('f-join').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/channels/join','POST',{channel_id:fd.get('channel_id')});flash('Вошёл в канал')}catch(e){flash('Ошибка: '+e.message)}loadOverview();loadChannels()});
+document.getElementById('f-leave').addEventListener('submit',async function(ev){ev.preventDefault();try{await api('/admin/api/channels/leave','POST',{});flash('Вышел из канала')}catch(e){flash('Ошибка: '+e.message)}loadOverview()});
 document.getElementById('f-kick').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/kick','POST',{user_id:fd.get('user_id')});flash('Кикнут')}catch(e){flash('Ошибка: '+e.message)}loadUsers()});
 document.getElementById('f-ban').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/ban','POST',{user_id:fd.get('user_id')});flash('Забанен')}catch(e){flash('Ошибка: '+e.message)}loadUsers()});
 document.getElementById('f-banuser').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);try{await api('/admin/api/ban_username','POST',{username:fd.get('username')});flash('Аккаунт забанен')}catch(e){flash('Ошибка: '+e.message)}});
 document.getElementById('f-msgclear').addEventListener('submit',async function(ev){ev.preventDefault();try{await api('/admin/api/messages/clear','POST',{});flash('Лог сообщений очищен')}catch(e){flash('Ошибка: '+e.message)}loadMessages()});
 document.getElementById('f-evclear').addEventListener('submit',async function(ev){ev.preventDefault();try{await api('/admin/api/events/clear','POST',{});flash('События очищены')}catch(e){flash('Ошибка: '+e.message)}loadEvents()});
-document.getElementById('f-task-add').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);var o={};fd.forEach(function(v,k){o[k]=v});
+document.getElementById('f-task-add').addEventListener('submit',async function(ev){
+  ev.preventDefault();
+  var fd=new FormData(ev.target);var o={};fd.forEach(function(v,k){o[k]=v});
+  // Поля скрытых групп не отправляем — иначе в задачу утечёт чужое значение.
+  var groups=document.querySelectorAll('#f-task-add [data-types]');
+  for(var i=0;i<groups.length;i++){
+    if(!groups[i].hidden)continue;
+    var ins=groups[i].querySelectorAll('input,select');
+    for(var j=0;j<ins.length;j++){delete o[ins[j].name]}
+  }
   ['channel_id','recurring_minutes','delay_min_seconds','delay_max_seconds','status_mode'].forEach(function(k){o[k]=parseInt(o[k]||0,10)||0});
   try{await api('/admin/api/tasks','POST',o);flash('Задача создана')}catch(e){flash('Ошибка: '+e.message)}
-  ev.target.reset();loadTasks()});
+  ev.target.reset();syncTaskFields();loadTasks();
+});
 document.getElementById('f-pm-add').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);var o={};fd.forEach(function(v,k){o[k]=v});try{await api('/admin/api/queue_offline_pm','POST',o);flash('В очередь')}catch(e){flash('Ошибка: '+e.message)}ev.target.reset();loadQueue()});
 document.getElementById('f-pm-clear').addEventListener('submit',async function(ev){ev.preventDefault();var fd=new FormData(this);var u=encodeURIComponent(fd.get('username'));try{await api('/admin/api/queue_offline_pm/'+u,'DELETE');flash('Очередь очищена')}catch(e){flash('Ошибка: '+e.message)}ev.target.reset();loadQueue()});
 document.getElementById('tasks').addEventListener('click',async function(ev){
@@ -277,13 +411,23 @@ document.getElementById('tasks').addEventListener('click',async function(ev){
   }catch(e){flash('Ошибка: '+e.message)}
   loadTasks();
 });
+
+/* ---------- авто-обновление: только для открытой вкладки ---------- */
 document.getElementById('live').addEventListener('change',function(){
   if(this.checked){startLive()}else{stopLive()}
 });
 var liveTimer=null;
-function startLive(){if(liveTimer)return;liveTimer=setInterval(function(){loadMessages();loadEvents()},3000)}
+function startLive(){if(liveTimer)return;liveTimer=setInterval(function(){
+  if(activeTab==='chat')loadMessages();
+  else if(activeTab==='server')loadEvents();
+  else if(activeTab==='users')loadUsers();
+},3000)}
 function stopLive(){clearInterval(liveTimer);liveTimer=null}
-reloadAll();
+
+/* ---------- старт ---------- */
+syncTaskFields();
+loadOverview();
+showTab('users');
 </script>
 </body>
 </html>
