@@ -13,6 +13,10 @@ type Config struct {
 	PublicHost string
 	// BotHost is what the bot dials (localhost when running next to the server).
 	BotHost string
+	// ShortHost is where the /tturl redirector answers. Messenger clients only
+	// link https URLs, so an account shared in a chat travels as
+	// https://<ShortHost>/tturl?... and lands on the tt:// address.
+	ShortHost string
 	TCPPort int
 	UDPPort int
 
@@ -86,6 +90,7 @@ func Load() Config {
 	return Config{
 		PublicHost:       host,
 		BotHost:          botHost,
+		ShortHost:        envStr("TT_SHORT_HOST", "tt."+host),
 		TCPPort:          tcpPort,
 		UDPPort:          udpPort,
 		BotUsername:      username,

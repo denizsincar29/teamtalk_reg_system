@@ -68,7 +68,8 @@ legend{font-weight:600}
 
   <h2>Аккаунты</h2>
   <p class="hint">Пароли отдаёт сам сервер TeamTalk — он показывает их администратору в списке аккаунтов. Файл .tt и ссылка tt:// собираются на месте из этого пароля, у нас ничего не хранится.</p>
-  <p><label>Ссылка для копирования: <input type="text" id="tt-clip" readonly size="52" aria-label="Готовая ссылка tt:// для копирования"></label></p>
+  <p><label>Ссылка для копирования: <input type="text" id="tt-clip" readonly size="52" aria-label="Готовая ссылка для копирования: tt:// или ссылка для мессенджера"></label></p>
+  <p class="muted">«Ссылка для мессенджера» — это https-адрес, который открывает TeamTalk у получателя. В ней лежит пароль аккаунта, так что годится она для лички, а не для публичных чатов.</p>
   <p id="accounts">—</p>
 </section>
 
@@ -309,6 +310,7 @@ async function loadAccounts(){
     // .tt отдаётся обычной ссылкой: её можно и нажать, и «сохранить ссылку как».
     var acts='<a class="btn" href="/admin/api/accounts/'+href+'/ttfile" download="'+u+'.tt">Скачать .tt</a> '+
       '<button data-act="tturl" data-user="'+u+'" aria-label="Скопировать ссылку tt:// для '+u+'">Скопировать tt://</button> '+
+      '<button data-act="ttshort" data-user="'+u+'" aria-label="Скопировать ссылку для мессенджера для '+u+'">Ссылка для мессенджера</button> '+
       '<button data-act="ban" data-user="'+u+'" aria-label="Забанить аккаунт '+u+'">Забанить</button> '+
       '<button data-act="unban" data-user="'+u+'" aria-label="Снять бан с аккаунта '+u+'">Разбанить</button> '+
       '<button data-act="del" data-user="'+u+'" aria-label="Удалить аккаунт '+u+'">Удалить</button>';
@@ -322,13 +324,15 @@ document.getElementById('accounts').addEventListener('click',async function(ev){
   var user=b.getAttribute('data-user'),act=b.getAttribute('data-act');
   var path='/admin/api/accounts/'+encodeURIComponent(user);
   try{
-    if(act==='tturl'){
+    if(act==='tturl'||act==='ttshort'){
+      var key=act==='tturl'?'url':'short_url';
+      var what=act==='tturl'?'Ссылка tt://':'Ссылка для мессенджера';
       var d=await api(path+'/tturl');
-      var f=document.getElementById('tt-clip');f.value=d.url;f.focus();f.select();
+      var f=document.getElementById('tt-clip');f.value=d[key];f.focus();f.select();
       var copied=false;
-      try{await navigator.clipboard.writeText(d.url);copied=true}catch(e){}
-      flash(copied?'Ссылка скопирована в буфер обмена':'Ссылка лежит в поле «Ссылка для копирования»');
-      announce(copied?'Ссылка tt:// скопирована':'Ссылка tt:// в поле для копирования');
+      try{await navigator.clipboard.writeText(d[key]);copied=true}catch(e){}
+      flash(copied?what+' скопирована в буфер обмена':what+' лежит в поле «Ссылка для копирования»');
+      announce(copied?what+' скопирована':what+' в поле для копирования');
       return;
     }
     if(act==='del'){

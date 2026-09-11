@@ -1,7 +1,9 @@
 package app
 
 import (
+	"encoding/base64"
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -36,6 +38,17 @@ func ttFileXML(cfg Config, username, password string) string {
 func ttURL(cfg Config, username, password string) string {
 	return fmt.Sprintf("tt://%s:%s@%s:%d:%d/",
 		pctEncode(username), pctEncode(password), cfg.PublicHost, cfg.TCPPort, cfg.UDPPort)
+}
+
+// ttShortURL renders the messenger-friendly link for one account: an https URL
+// on ShortHost that /tturl turns back into the tt:// address. Chat clients only
+// link https, so this is what actually gets pasted into a conversation; the
+// password rides base64-encoded, exactly as in the public .tt download link.
+func ttShortURL(cfg Config, username, password string) string {
+	return fmt.Sprintf("https://%s/tturl?u=%s&p=%s",
+		cfg.ShortHost,
+		url.QueryEscape(username),
+		base64.RawURLEncoding.EncodeToString([]byte(password)))
 }
 
 func xmlEsc(s string) string {

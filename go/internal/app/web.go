@@ -54,6 +54,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", s.pageIndex)
 	mux.HandleFunc("POST /register", s.handleRegister)
 	mux.HandleFunc("GET /download-tt/{username}/{password}", s.handleDownloadTT)
+	mux.HandleFunc("GET /tturl", s.handleTTURL)
 
 	// Admin login/logout and the dashboard shell.
 	mux.HandleFunc("GET /admin/login", s.pageLogin)
@@ -280,6 +281,50 @@ func (s *Server) handleDownloadTT(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/xml")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", username+".tt"))
 	_, _ = w.Write([]byte(body))
+}
+
+// handleTTURL turns a short https link into a tt:// address. Chat clients link
+// only https URLs, so an invitation meant for a messenger is sent as
+// https://<ShortHost>/tturl?u=<ник>&p=<base64 пароль> and the browser follows
+// the redirect into the installed TeamTalk client.
+//
+// The handler is deliberately stateless: the account travels entirely in the
+// query, so it answers even while the TeamTalk server is down, and it never
+// looks accounts up — which would turn a public URL into a password oracle for
+// anyone who guesses a username.
+func (s *Server) handleTTURL(w http.ResponseWriter, r *http.Request) {
+	username := strings.TrimSpace(r.URL.Query().Get("u"))
+	raw := strings.TrimSpace(r.URL.Query().Get("p"))
+	if !validLinkUsername(username) || raw == "" {
+		http.Error(w, "bad link", http.StatusBadRequest)
+		return
+	}
+	pw, err := base64.RawURLEncoding.DecodeString(raw)
+	if err != nil {
+		// tolerate padded input from hand-crafted links
+		pw, err = base64.URLEncoding.DecodeString(raw)
+	}
+	if err != nil || len(pw) == 0 {
+		http.Error(w, "bad link", http.StatusBadRequest)
+		return
+	}
+	http.Redirect(w, r, ttURL(s.cfg, username, string(pw)), http.StatusFound)
+}
+
+// validLinkUsername is the redirector's guard. It is looser than
+// validUsername — accounts made straight on the TeamTalk server may carry dots
+// or dashes — and only rejects names that cannot survive the redirect: empty,
+// overlong, or holding control characters. ttURL percent-encodes the rest.
+func validLinkUsername(u string) bool {
+	if u == "" || len(u) > 64 {
+		return false
+	}
+	for i := 0; i < len(u); i++ {
+		if u[i] <= 0x20 || u[i] == 0x7f {
+			return false
+		}
+	}
+	return true
 }
 
 // ---- JSON helpers ----

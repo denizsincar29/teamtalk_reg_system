@@ -167,8 +167,9 @@ func (s *Server) apiAccountTTURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"username": name,
-		"url":      ttURL(s.cfg, name, pw),
+		"username":  name,
+		"url":       ttURL(s.cfg, name, pw),
+		"short_url": ttShortURL(s.cfg, name, pw),
 	})
 }
 
