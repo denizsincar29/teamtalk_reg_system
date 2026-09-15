@@ -520,12 +520,17 @@ func (s *Service) CheckUserExists(username string) (bool, error) {
 	return b.AccountExists(username)
 }
 
+// consentNote — след согласия в самом аккаунте TeamTalk: у сервера нет своей
+// базы, а поле note — единственное место, где отметка о согласии переживёт
+// регистрацию. Видна администратору в списке аккаунтов.
+const consentNote = "Согласие с политикой ПДн от 15.09.2026 — denizsincar.ru/privacy"
+
 func (s *Service) CreateUser(username, password string) error {
 	b, err := s.botLive()
 	if err != nil {
 		return err
 	}
-	if err := b.CreateAccount(username, password, tt.UserTypeDefault, 0, ""); err != nil {
+	if err := b.CreateAccount(username, password, tt.UserTypeDefault, 0, consentNote); err != nil {
 		return err
 	}
 	// Announce the new registration on the server; never fail the signup if

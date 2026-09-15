@@ -25,6 +25,11 @@ dl{display:grid;grid-template-columns:auto 1fr;gap:.2rem 1rem;max-width:26rem}
     <input name="password" type="password" required minlength="4" maxlength="64">
   </label>
   <p>Ник — от 3 символов, пароль — от 4. Используются только латинские буквы, цифры и символ подчёркивания.</p>
+  <label>
+    <input type="checkbox" name="consent" required aria-describedby="consent-hint">
+    Согласен с политикой обработки персональных данных
+  </label>
+  <p id="consent-hint"><a href="https://denizsincar.ru/privacy" target="_blank" rel="noopener noreferrer">Политика обработки персональных данных</a></p>
   <button type="submit">Создать аккаунт</button>
 </form>
 <hr>

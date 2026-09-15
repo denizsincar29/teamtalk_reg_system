@@ -210,6 +210,12 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	username := strings.TrimSpace(r.FormValue("username"))
 	password := r.FormValue("password")
 
+	// Согласие — правовое основание обработки (152-ФЗ): без галочки аккаунт
+	// не заводим, иначе подтвердить согласие будет нечем.
+	if r.FormValue("consent") == "" {
+		fail("Нужно согласие с политикой обработки персональных данных.")
+		return
+	}
 	if !validUsername(username) {
 		fail("Ник должен быть от 3 символов: латинские буквы, цифры и подчёркивание.")
 		return
