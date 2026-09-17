@@ -46,6 +46,13 @@ type Service struct {
 
 func nowStr() string { return time.Now().Format(timeLayout) }
 
+// mskZone is a fixed offset rather than a zone loaded from tzdata: the
+// deployment ships no time zone database, and Moscow has had no DST since 2014.
+var mskZone = time.FixedZone("МСК", 3*60*60)
+
+// mskClock renders the current Moscow time for notifications ("15:32 МСК").
+func mskClock() string { return time.Now().In(mskZone).Format("15:04") + " МСК" }
+
 // NewService builds a Service. Call Start to begin connecting.
 func NewService(cfg Config) *Service {
 	return &Service{
@@ -111,12 +118,12 @@ func (s *Service) supervise() {
 			if firstFail {
 				firstFail = false
 				s.pushEv(evRec{Type: "bot_connect_failed", Time: nowStr()})
-				notify(s.cfg.NtfyURL, "Bot connection failed", "Could not connect to TeamTalk server", []string{"warning"}, 4)
+				notify(s.cfg.NtfyURL, "Бот не подключился", "Не удалось подключиться к серверу TeamTalk", []string{"warning"}, 4)
 				failedAt = time.Now()
 			} else if time.Since(failedAt) > time.Minute {
 				// Periodic reminder while the server stays down.
 				failedAt = time.Now()
-				notify(s.cfg.NtfyURL, "Bot connection failed", "Could not connect to TeamTalk server", []string{"warning"}, 4)
+				notify(s.cfg.NtfyURL, "Бот не подключился", "Не удалось подключиться к серверу TeamTalk", []string{"warning"}, 4)
 			}
 		} else {
 			firstFail = true
@@ -291,7 +298,11 @@ func (s *Service) onEvent(e tt.Event) {
 			return
 		}
 		s.pushEv(evRec{Type: "user_login", Username: user, Nickname: nick, UserID: uid, Time: nowStr()})
-		notify(s.cfg.NtfyURL, "User connected", nick+" ("+user+") joined the server", []string{"green_circle"}, 3)
+		who := nick + " (" + user + ")"
+		if ip := e.Line.Str(tt.KeyIPAddr); ip != "" {
+			who += ", " + ip
+		}
+		notify(s.cfg.NtfyURL, "Подключился", who+", "+mskClock(), []string{"green_circle"}, 3)
 		go s.onUserLogin(uid)
 	case tt.EvUserLoggedOut:
 		if uid == 0 {
@@ -345,12 +356,12 @@ func (s *Service) onEvent(e tt.Event) {
 		username := e.Line.Str(tt.KeyUsername)
 		if username != "" && !strings.EqualFold(username, s.cfg.BotUsername) {
 			s.pushEv(evRec{Type: "user_account_new", Username: username, Time: nowStr()})
-			notify(s.cfg.NtfyURL, "New account created", "Account '"+username+"' was created", []string{"tada"}, 3)
+			notify(s.cfg.NtfyURL, "Аккаунт создан", "Создан аккаунт «"+username+"»", []string{"tada"}, 3)
 		}
 	case tt.EvUserKicked:
 		// A "kicked" push reaches the kicked user only, so this is us.
 		s.pushEv(evRec{Type: "bot_kicked", Channel: "", Time: nowStr()})
-		notify(s.cfg.NtfyURL, "Bot was kicked", "Bot was kicked from the server", []string{"boot"}, 4)
+		notify(s.cfg.NtfyURL, "Бота выкинули", "Бота выкинули с сервера", []string{"boot"}, 4)
 	}
 }
 
@@ -403,7 +414,7 @@ func (s *Service) onMessage(e tt.Event) {
 	s.pushMsg(rec)
 
 	if kind == "private" {
-		notify(s.cfg.NtfyURL, "PM from "+from, content, []string{"speech_balloon"}, 4)
+		notify(s.cfg.NtfyURL, "ЛС от "+from, content, []string{"speech_balloon"}, 4)
 	}
 }
 
@@ -538,7 +549,7 @@ func (s *Service) CreateUser(username, password string) error {
 	if b.MyChannelID() != 0 {
 		_ = b.SendBroadcast("New user registered: " + username)
 	}
-	notify(s.cfg.NtfyURL, "New user registered", "Username: "+username, []string{"tada"}, 3)
+	notify(s.cfg.NtfyURL, "Новая регистрация", "Имя: "+username, []string{"tada"}, 3)
 	return nil
 }
 
