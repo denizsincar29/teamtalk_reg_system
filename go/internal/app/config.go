@@ -19,8 +19,8 @@ type Config struct {
 	// link https URLs, so an account shared in a chat travels as
 	// https://<ShortHost>/tturl?... and lands on the tt:// address.
 	ShortHost string
-	TCPPort int
-	UDPPort int
+	TCPPort   int
+	UDPPort   int
 
 	// Bot credentials.
 	BotUsername string
