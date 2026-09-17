@@ -41,7 +41,8 @@ func TestNotifyPostsToRootWithTopicInBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	notify(srv.URL+"/teamtalk", "User connected", "vinograd joined the server", []string{"green_circle"}, 3)
+	const click = "tt://bot:secret@denizsincar.ru:10333:10333/"
+	notify(srv.URL+"/teamtalk", click, "User connected", "vinograd joined the server", []string{"green_circle"}, 3)
 
 	select {
 	case s := <-got:
@@ -53,6 +54,9 @@ func TestNotifyPostsToRootWithTopicInBody(t *testing.T) {
 		}
 		if s.body["topic"] != "teamtalk" {
 			t.Errorf("topic = %v, want teamtalk", s.body["topic"])
+		}
+		if s.body["click"] != click {
+			t.Errorf("click = %v, want %q", s.body["click"], click)
 		}
 		if s.body["title"] != "User connected" || s.body["message"] != "vinograd joined the server" {
 			t.Errorf("title/message got mangled: %v", s.body)

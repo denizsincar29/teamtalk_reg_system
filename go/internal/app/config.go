@@ -30,6 +30,12 @@ type Config struct {
 	// Web listener.
 	ListenAddr string
 
+	// AdminTTURL is what a tap on a push notification opens — a ready tt://
+	// address with credentials, so the owner lands in the client with one tap.
+	// Set ADMIN_TT_URL to use a personal account; otherwise the address is
+	// built from the bot credentials (which are admin on the server).
+	AdminTTURL string
+
 	// ntfy push notifications. Empty NtfyURL disables notifications.
 	NtfyURL string
 
@@ -87,7 +93,7 @@ func Load() Config {
 		ntfyURL = ntfyServer + "/" + ntfyTopic
 	}
 
-	return Config{
+	cfg := Config{
 		PublicHost:       host,
 		BotHost:          botHost,
 		ShortHost:        envStr("TT_SHORT_HOST", "tt."+host),
@@ -99,6 +105,13 @@ func Load() Config {
 		BotJoinChannelID: envInt("BOT_JOIN_CHANNEL_ID", 0),
 		ListenAddr:       envStr("APP_HOST", "0.0.0.0") + ":" + strconv.Itoa(envInt("APP_PORT", 8000)),
 		NtfyURL:          ntfyURL,
+		AdminTTURL:       envStr("ADMIN_TT_URL", ""),
 		DataDir:          envStr("DATA_DIR", "data"),
 	}
+	// Without an explicit address the tap target is the bot account, whose
+	// credentials the deployment already carries.
+	if cfg.AdminTTURL == "" && cfg.BotUsername != "" && cfg.BotPassword != "" {
+		cfg.AdminTTURL = ttURL(cfg, cfg.BotUsername, cfg.BotPassword)
+	}
+	return cfg
 }

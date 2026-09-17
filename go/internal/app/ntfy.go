@@ -14,6 +14,10 @@ import (
 // notify posts a push notification to the ntfy topic (fire-and-forget in its
 // own goroutine, so it never blocks the bot's read loop or an HTTP handler).
 // An empty url silently disables notifications, mirroring the Python ntfy.py.
+// click, when not empty, becomes ntfy's "click" action: tapping the
+// notification on the phone opens that address — the deployment puts a tt://
+// link with credentials there, so a tap lands in the TeamTalk client.
+//
 // If NTFY_USERNAME/NTFY_PASSWORD are set for the process, requests carry HTTP
 // basic auth (the deployment's ntfy server is protected, like the Python bot).
 //
@@ -24,7 +28,7 @@ import (
 // verbatim — which is how the raw JSON ended up on the lock screen instead of a
 // title and a text. So the address is split here: scheme and host go to the
 // request, the last path segment goes into the body.
-func notify(rawURL, title, message string, tags []string, priority int) {
+func notify(rawURL, click, title, message string, tags []string, priority int) {
 	if rawURL == "" {
 		return
 	}
@@ -42,6 +46,9 @@ func notify(rawURL, title, message string, tags []string, priority int) {
 		}
 		if len(tags) > 0 {
 			payload["tags"] = tags
+		}
+		if click != "" {
+			payload["click"] = click
 		}
 		body, err := json.Marshal(payload)
 		if err != nil {
