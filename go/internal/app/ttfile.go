@@ -40,12 +40,33 @@ func ttURL(cfg Config, username, password string) string {
 		pctEncode(username), pctEncode(password), cfg.PublicHost, cfg.TCPPort, cfg.UDPPort)
 }
 
+// ttURLQuery renders the other tt:// shape the TeamTalk 5 clients accept, with
+// the credentials as query parameters instead of userinfo. Which shape a given
+// build opens is not documented anywhere reliable, so the landing page offers
+// both and the owner taps the one that works.
+func ttURLQuery(cfg Config, username, password string) string {
+	return fmt.Sprintf("tt://%s:%d:%d/?username=%s&password=%s",
+		cfg.PublicHost, cfg.TCPPort, cfg.UDPPort,
+		pctEncode(username), pctEncode(password))
+}
+
 // ttShortURL renders the messenger-friendly link for one account: an https URL
 // on ShortHost that /tturl turns back into the tt:// address. Chat clients only
 // link https, so this is what actually gets pasted into a conversation; the
 // password rides base64-encoded, exactly as in the public .tt download link.
 func ttShortURL(cfg Config, username, password string) string {
 	return fmt.Sprintf("https://%s/tturl?u=%s&p=%s",
+		cfg.ShortHost,
+		url.QueryEscape(username),
+		base64.RawURLEncoding.EncodeToString([]byte(password)))
+}
+
+// ttOpenURL renders the landing page a push notification taps into. A phone
+// refuses to open a bare tt:// address from a notification, and it also refuses
+// the redirect /tturl answers with — Safari reports "cannot show URL" — so the
+// tap lands on a page whose links are the user gesture iOS insists on.
+func ttOpenURL(cfg Config, username, password string) string {
+	return fmt.Sprintf("https://%s/open?u=%s&p=%s",
 		cfg.ShortHost,
 		url.QueryEscape(username),
 		base64.RawURLEncoding.EncodeToString([]byte(password)))

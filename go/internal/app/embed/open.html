@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeamTalk — подключиться</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:34rem;margin:2rem auto;padding:0 1rem;line-height:1.6;font-size:1.05rem}
+a.btn{display:inline-block;font-size:1.1rem;padding:.6rem 1rem;margin:.3rem 0;border-radius:.3rem;border:1px solid #888;text-decoration:none}
+a.primary{background:#1a73e8;color:#fff;border:none}
+h2{font-size:1.1rem;margin-top:2rem}
+</style>
+</head>
+<body>
+<h1>Подключиться к TeamTalk</h1>
+<p>Нажми на кнопку — устройство откроет приложение TeamTalk и подключит тебя к серверу под аккаунтом {{.Username}}.</p>
+<p><a class="primary btn" href="{{.LinkQuery}}">Открыть TeamTalk</a></p>
+
+<h2>Если ничего не произошло</h2>
+<p>Попробуй второй адрес: клиенты понимают два формата ссылки, и какой из них примет твой — зависит от версии приложения.</p>
+<p><a class="btn" href="{{.LinkUserInfo}}">Открыть TeamTalk, второй формат</a></p>
+<p>Если молчат обе кнопки, значит на этом устройстве приложение TeamTalk не установлено: на телефоне поставь его из магазина приложений, а на компьютере ссылка откроется в уже установленном клиенте.</p>
+</body>
+</html>

@@ -141,7 +141,7 @@ func clickURL(cfg Config) string {
 	if user == "" || pass == "" {
 		return ""
 	}
-	return ttShortURL(cfg, user, pass)
+	return ttOpenURL(cfg, user, pass)
 }
 
 // splitTTUserInfo pulls the credentials out of a tt://user:pass@host:tcp:udp/

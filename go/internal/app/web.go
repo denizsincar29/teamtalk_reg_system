@@ -55,6 +55,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /register", s.handleRegister)
 	mux.HandleFunc("GET /download-tt/{username}/{password}", s.handleDownloadTT)
 	mux.HandleFunc("GET /tturl", s.handleTTURL)
+	mux.HandleFunc("GET /open", s.handleOpen)
 
 	// Admin login/logout and the dashboard shell.
 	mux.HandleFunc("GET /admin/login", s.pageLogin)
@@ -299,11 +300,41 @@ func (s *Server) handleDownloadTT(w http.ResponseWriter, r *http.Request) {
 // looks accounts up — which would turn a public URL into a password oracle for
 // anyone who guesses a username.
 func (s *Server) handleTTURL(w http.ResponseWriter, r *http.Request) {
-	username := strings.TrimSpace(r.URL.Query().Get("u"))
-	raw := strings.TrimSpace(r.URL.Query().Get("p"))
-	if !validLinkUsername(username) || raw == "" {
+	username, password, ok := linkCredentials(r)
+	if !ok {
 		http.Error(w, "bad link", http.StatusBadRequest)
 		return
+	}
+	http.Redirect(w, r, ttURL(s.cfg, username, password), http.StatusFound)
+}
+
+// handleOpen is the page a push notification taps into. A phone will not open
+// a custom scheme from a notification, and it will not follow the redirect
+// /tturl answers with either — Safari only says "cannot show URL". A link on a
+// page is the user gesture the system wants, so the page offers the address as
+// two buttons: the two known shapes of a tt:// address, since no client
+// documents which one it accepts.
+func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
+	username, password, ok := linkCredentials(r)
+	if !ok {
+		http.Error(w, "bad link", http.StatusBadRequest)
+		return
+	}
+	s.render(w, "open.html", viewData{
+		"Username":     username,
+		"LinkQuery":    ttURLQuery(s.cfg, username, password),
+		"LinkUserInfo": ttURL(s.cfg, username, password),
+	})
+}
+
+// linkCredentials reads the account out of ?u=<ник>&p=<base64 пароль> — the
+// same stateless encoding the redirector uses, so neither handler has to look
+// anything up (and neither can serve as a password oracle).
+func linkCredentials(r *http.Request) (username, password string, ok bool) {
+	username = strings.TrimSpace(r.URL.Query().Get("u"))
+	raw := strings.TrimSpace(r.URL.Query().Get("p"))
+	if !validLinkUsername(username) || raw == "" {
+		return "", "", false
 	}
 	pw, err := base64.RawURLEncoding.DecodeString(raw)
 	if err != nil {
@@ -311,10 +342,9 @@ func (s *Server) handleTTURL(w http.ResponseWriter, r *http.Request) {
 		pw, err = base64.URLEncoding.DecodeString(raw)
 	}
 	if err != nil || len(pw) == 0 {
-		http.Error(w, "bad link", http.StatusBadRequest)
-		return
+		return "", "", false
 	}
-	http.Redirect(w, r, ttURL(s.cfg, username, string(pw)), http.StatusFound)
+	return username, string(pw), true
 }
 
 // validLinkUsername is the redirector's guard. It is looser than
