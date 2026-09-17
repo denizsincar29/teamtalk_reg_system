@@ -246,7 +246,9 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		"TcpPort":     s.cfg.TCPPort,
 		"UdpPort":     s.cfg.UDPPort,
 		"DownloadURL": "/download-tt/" + username + "/" + base64.RawURLEncoding.EncodeToString([]byte(password)),
-		"TTURL":       ttURL(s.cfg, username, password),
+		// template.URL: see handleOpen — without it the button gets "#ZgotmplZ"
+		// and the freshly registered user has no working "connect now" link.
+		"TTURL": template.URL(ttURL(s.cfg, username, password)),
 	})
 }
 
@@ -320,10 +322,14 @@ func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad link", http.StatusBadRequest)
 		return
 	}
+	// template.URL is required here: html/template does not know the tt scheme
+	// and would otherwise replace the href with "#ZgotmplZ". Both addresses are
+	// built by ttURL/ttURLQuery from a validated username and a percent-encoded
+	// password, so there is nothing to smuggle in.
 	s.render(w, "open.html", viewData{
 		"Username":     username,
-		"LinkQuery":    ttURLQuery(s.cfg, username, password),
-		"LinkUserInfo": ttURL(s.cfg, username, password),
+		"LinkQuery":    template.URL(ttURLQuery(s.cfg, username, password)),
+		"LinkUserInfo": template.URL(ttURL(s.cfg, username, password)),
 	})
 }
 
