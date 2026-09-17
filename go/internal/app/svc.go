@@ -298,11 +298,9 @@ func (s *Service) onEvent(e tt.Event) {
 			return
 		}
 		s.pushEv(evRec{Type: "user_login", Username: user, Nickname: nick, UserID: uid, Time: nowStr()})
-		who := nick + " (" + user + ")"
-		if ip := e.Line.Str(tt.KeyIPAddr); ip != "" {
-			who += ", " + ip
-		}
-		notify(s.cfg.NtfyURL, "Подключился", who+", "+mskClock(), []string{"green_circle"}, 3)
+		// No client IP here on purpose: the notification lands on lock screens
+		// and in backups, and the owner asked for addresses not to be there.
+		notify(s.cfg.NtfyURL, "Подключился", nick+" ("+user+"), "+mskClock(), []string{"green_circle"}, 3)
 		go s.onUserLogin(uid)
 	case tt.EvUserLoggedOut:
 		if uid == 0 {
