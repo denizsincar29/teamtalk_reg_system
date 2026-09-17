@@ -80,6 +80,13 @@ func ttOpenURL(cfg Config, username, password string) string {
 		base64.RawURLEncoding.EncodeToString([]byte(password)))
 }
 
+// adminAccountURL is the admin dashboard opened on one account — the tap target
+// of a "new registration" push, so the owner lands on the fresh account instead
+// of the tt:// address the other notifications carry.
+func adminAccountURL(cfg Config, username string) string {
+	return fmt.Sprintf("https://%s/admin/?account=%s", cfg.ShortHost, url.QueryEscape(username))
+}
+
 func xmlEsc(s string) string {
 	r := strings.NewReplacer(
 		"&", "&amp;",

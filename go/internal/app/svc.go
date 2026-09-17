@@ -547,7 +547,10 @@ func (s *Service) CreateUser(username, password string) error {
 	if b.MyChannelID() != 0 {
 		_ = b.SendBroadcast("New user registered: " + username)
 	}
-	notify(s.cfg.NtfyURL, s.cfg.ClickURL, "Новая регистрация", "Имя: "+username, []string{"tada"}, 3)
+	// Unlike the other notifications, this one taps into the admin dashboard
+	// opened on the new account: the owner's next move is to look at it (or
+	// hand it out), not to join the server himself.
+	notify(s.cfg.NtfyURL, adminAccountURL(s.cfg, username), "Новая регистрация", "Имя: "+username, []string{"tada"}, 3)
 	return nil
 }
 

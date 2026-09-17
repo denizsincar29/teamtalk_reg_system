@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -175,7 +176,9 @@ func (s *Server) adminPage(next http.HandlerFunc) http.HandlerFunc {
 				writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "Not logged in"})
 				return
 			}
-			http.Redirect(w, r, "/admin/login", http.StatusFound)
+			// The query travels along: a notification tap carries ?account=…,
+			// which the login form hands back to the dashboard (see safeNext).
+			http.Redirect(w, r, "/admin/login?next="+url.QueryEscape(r.URL.RequestURI()), http.StatusFound)
 			return
 		}
 		next(w, r)
@@ -199,7 +202,7 @@ func (s *Server) pageLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/", http.StatusFound)
 		return
 	}
-	s.render(w, "login.html", viewData{"Error": ""})
+	s.render(w, "login.html", viewData{"Error": "", "Next": safeNext(r.URL.Query().Get("next"))})
 }
 
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {

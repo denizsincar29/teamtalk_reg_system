@@ -314,9 +314,30 @@ async function loadAccounts(){
       '<button data-act="ban" data-user="'+u+'" aria-label="Забанить аккаунт '+u+'">Забанить</button> '+
       '<button data-act="unban" data-user="'+u+'" aria-label="Снять бан с аккаунта '+u+'">Разбанить</button> '+
       '<button data-act="del" data-user="'+u+'" aria-label="Удалить аккаунт '+u+'">Удалить</button>';
-    list.appendChild(li('<b>'+u+'</b> — '+esc(a.user_type)+(a.note?' · '+esc(a.note):'')+' · '+pw+'<br>'+acts));
+    var row=li('<b>'+u+'</b> — '+esc(a.user_type)+(a.note?' · '+esc(a.note):'')+' · '+pw+'<br>'+acts);
+    // Карточка адресуема: на неё ставится фокус при переходе из уведомления
+    // о новой регистрации (/admin/?account=ник).
+    row.setAttribute('data-user',a.username);
+    row.tabIndex=-1;
+    list.appendChild(row);
   });
   el.innerHTML='';el.appendChild(list);
+  focusDeepLink();
+}
+
+/* ---------- переход из уведомления ---------- */
+// ntfy-пуш о новой регистрации ведёт на /admin/?account=ник: открываем вкладку
+// «Пользователи», доводим список аккаунтов до конца загрузки и ставим фокус
+// на карточку этого аккаунта — чтобы не искать его в списке вручную.
+var DEEPLINK_ACCOUNT=(new URLSearchParams(location.search)).get('account')||'';
+function focusDeepLink(){
+  if(!DEEPLINK_ACCOUNT)return;
+  var want=DEEPLINK_ACCOUNT;DEEPLINK_ACCOUNT='';
+  var rows=document.querySelectorAll('#accounts li[data-user]'),hit=null;
+  for(var i=0;i<rows.length;i++){if(rows[i].getAttribute('data-user')===want){hit=rows[i];break}}
+  if(!hit){announce('Аккаунт '+want+' в списке не найден');return}
+  hit.focus();
+  announce('Аккаунт '+want+', карточка в списке аккаунтов');
 }
 // Действия над аккаунтом: копирование ссылки, бан, разбан, удаление.
 document.getElementById('accounts').addEventListener('click',async function(ev){

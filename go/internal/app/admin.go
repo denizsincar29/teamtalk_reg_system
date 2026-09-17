@@ -46,8 +46,9 @@ func rawToLogical(raw int) int {
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	username := strings.TrimSpace(r.FormValue("username"))
 	password := r.FormValue("password")
+	next := safeNext(r.FormValue("next"))
 	fail := func(msg string) {
-		s.render(w, "login.html", viewData{"Error": msg})
+		s.render(w, "login.html", viewData{"Error": msg, "Next": next})
 	}
 	if username == "" || password == "" {
 		fail("Введи ник и пароль.")
@@ -68,7 +69,22 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		Path: "/admin", HttpOnly: true, SameSite: http.SameSiteLaxMode,
 		MaxAge: int(sessionTTL / time.Second),
 	})
-	http.Redirect(w, r, "/admin/", http.StatusFound)
+	if next == "" {
+		next = "/admin/"
+	}
+	http.Redirect(w, r, next, http.StatusFound)
+}
+
+// safeNext keeps the deep link a notification tapped into alive across the
+// login form: the guard sends /admin/?account=… to /admin/login?next=…, and the
+// dashboard opens on that account once the password is in. Only paths inside
+// /admin are let through, so the form cannot be turned into an open redirect.
+func safeNext(next string) string {
+	if !strings.HasPrefix(next, "/admin") || strings.Contains(next, "//") ||
+		strings.Contains(next, "..") || strings.ContainsAny(next, "\r\n") {
+		return ""
+	}
+	return next
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {

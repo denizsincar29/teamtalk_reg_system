@@ -17,6 +17,7 @@ button{font-size:1rem;padding:.4rem 1rem;margin-top:.4rem}
 <p>Логин — по админскому аккаунту TeamTalk: ник и пароль существующей учётной записи с правами администратора.</p>
 {{if .Error}}<p class="alert" role="alert">Ошибка: {{.Error}}</p>{{end}}
 <form method="post" action="/admin/login">
+  {{if .Next}}<input type="hidden" name="next" value="{{.Next}}">{{end}}
   <label>Никнейм
     <input name="username" required autocomplete="username" autofocus>
   </label>
