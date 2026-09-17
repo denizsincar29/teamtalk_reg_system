@@ -15,8 +15,8 @@ func TestMskClock(t *testing.T) {
 	if !regexp.MustCompile(`^\d\d:\d\d МСК$`).MatchString(got) {
 		t.Fatalf("mskClock() = %q, want HH:MM МСК", got)
 	}
-	if mskZone.Offset() != 3*60*60 {
-		t.Fatalf("mskZone offset = %d, want 10800", mskZone.Offset())
+	if _, offset := time.Now().In(mskZone).Zone(); offset != 3*60*60 {
+		t.Fatalf("mskZone offset = %d, want 10800", offset)
 	}
 	// The rendered time must be Moscow wall time, not the process's own zone.
 	want := time.Now().In(time.FixedZone("test", 3*60*60)).Format("15:04") + " МСК"
