@@ -13,7 +13,7 @@ func TestLoadClickURL(t *testing.T) {
 	t.Setenv("ADMIN_TT_URL", "")
 
 	cfg := Load()
-	if got, want := cfg.AdminTTURL, "tt://bot:p%40ss%20word@example.org:10333:10333/"; got != want {
+	if got, want := cfg.AdminTTURL, "tt://example.org?tcpport=10333&udpport=10333&encrypted=false&username=bot&password=p%40ss%20word"; got != want {
 		t.Errorf("fallback AdminTTURL = %q, want %q", got, want)
 	}
 	// base64url of "p@ss word", unpadded, is what the link carries.

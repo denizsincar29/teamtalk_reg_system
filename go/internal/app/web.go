@@ -312,10 +312,10 @@ func (s *Server) handleTTURL(w http.ResponseWriter, r *http.Request) {
 
 // handleOpen is the page a push notification taps into. A phone will not open
 // a custom scheme from a notification, and it will not follow the redirect
-// /tturl answers with either — Safari only says "cannot show URL". A link on a
-// page is the user gesture the system wants, so the page offers the address as
-// two buttons: the two known shapes of a tt:// address, since no client
-// documents which one it accepts.
+// /tturl answers with either — Safari only says "cannot show URL", or, when the
+// address is malformed, that it is invalid. The page therefore carries the
+// documented tt:// address, navigates to it itself, and keeps a button for a
+// second tap if the automatic opening is blocked.
 func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 	username, password, ok := linkCredentials(r)
 	if !ok {
@@ -324,12 +324,12 @@ func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 	}
 	// template.URL is required here: html/template does not know the tt scheme
 	// and would otherwise replace the href with "#ZgotmplZ". Both addresses are
-	// built by ttURL/ttURLQuery from a validated username and a percent-encoded
-	// password, so there is nothing to smuggle in.
+	// built by ttURL/ttURLUserInfo from a validated username and a
+	// percent-encoded password, so there is nothing to smuggle in.
 	s.render(w, "open.html", viewData{
 		"Username":     username,
-		"LinkQuery":    template.URL(ttURLQuery(s.cfg, username, password)),
-		"LinkUserInfo": template.URL(ttURL(s.cfg, username, password)),
+		"LinkQuery":    template.URL(ttURL(s.cfg, username, password)),
+		"LinkUserInfo": template.URL(ttURLUserInfo(s.cfg, username, password)),
 	})
 }
 

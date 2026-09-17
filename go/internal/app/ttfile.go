@@ -34,26 +34,28 @@ func ttFileXML(cfg Config, username, password string) string {
 	return b.String()
 }
 
-// ttURL renders tt://user:pass@host:tcp:udp/ (urllib quote, safe="").
+// ttURL is the documented tt:// address (BearWare, "tt Files and tt:// URLs
+// for TeamTalk Servers"): every field is a query parameter, the ports among
+// them —
+//
+//	tt://host?tcpport=10333&udpport=10333&encrypted=false&username=…&password=…
+//
+// The ports must NOT be written into the authority as "host:10333:10333": that
+// is not a shape the scheme defines, and a phone rejects the whole address as
+// invalid. Only this form goes to end users.
 func ttURL(cfg Config, username, password string) string {
-	return fmt.Sprintf("tt://%s:%s@%s:%d:%d/",
-		pctEncode(username), pctEncode(password), cfg.PublicHost, cfg.TCPPort, cfg.UDPPort)
+	return fmt.Sprintf("tt://%s?tcpport=%d&udpport=%d&encrypted=false&username=%s&password=%s",
+		cfg.PublicHost, cfg.TCPPort, cfg.UDPPort,
+		pctEncode(username), pctEncode(password))
 }
 
-// ttURLQuery renders the tt:// shape that iOS actually opens, with the
-// credentials as query parameters. The ports must be left out when they are the
-// TeamTalk defaults: "host:10333:10333" makes iOS reject the whole address as
-// invalid ("Safari cannot open the page because the address is invalid"), which
-// is exactly what happened on the owner's phone, while his own redirector page
-// with "tt://host?username=…" opens the client fine. A deployment on
-// non-default ports keeps the explicit three-part host, best effort.
-func ttURLQuery(cfg Config, username, password string) string {
-	host := cfg.PublicHost
-	if cfg.TCPPort != 10333 || cfg.UDPPort != 10333 {
-		host = fmt.Sprintf("%s:%d:%d", cfg.PublicHost, cfg.TCPPort, cfg.UDPPort)
-	}
-	return fmt.Sprintf("tt://%s/?username=%s&password=%s",
-		host, pctEncode(username), pctEncode(password))
+// ttURLUserInfo is the older tt://user:pass@host:tcp:udp/ shape the Python
+// system produced. The scheme does not document it, so it never leaves the
+// landing page as the primary link — it stays as the second button for a
+// desktop client that prefers the compact form.
+func ttURLUserInfo(cfg Config, username, password string) string {
+	return fmt.Sprintf("tt://%s:%s@%s:%d:%d/",
+		pctEncode(username), pctEncode(password), cfg.PublicHost, cfg.TCPPort, cfg.UDPPort)
 }
 
 // ttShortURL renders the messenger-friendly link for one account: an https URL
@@ -70,7 +72,7 @@ func ttShortURL(cfg Config, username, password string) string {
 // ttOpenURL renders the landing page a push notification taps into. A phone
 // refuses to open a bare tt:// address from a notification, and it also refuses
 // the redirect /tturl answers with — Safari reports "cannot show URL" — so the
-// tap lands on a page whose links are the user gesture iOS insists on.
+// tap lands on a page that navigates to the address itself.
 func ttOpenURL(cfg Config, username, password string) string {
 	return fmt.Sprintf("https://%s/open?u=%s&p=%s",
 		cfg.ShortHost,
