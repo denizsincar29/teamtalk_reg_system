@@ -1,8 +1,10 @@
 package app
 
 import (
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // Config holds all server settings. Every value is read from the environment
@@ -30,11 +32,16 @@ type Config struct {
 	// Web listener.
 	ListenAddr string
 
-	// AdminTTURL is what a tap on a push notification opens — a ready tt://
-	// address with credentials, so the owner lands in the client with one tap.
-	// Set ADMIN_TT_URL to use a personal account; otherwise the address is
-	// built from the bot credentials (which are admin on the server).
+	// AdminTTURL is ADMIN_TT_URL as configured: the tt:// address of the
+	// account a notification tap should log into (a personal admin account, or
+	// the bot credentials when unset).
 	AdminTTURL string
+
+	// ClickURL is what actually goes into the push as ntfy's "click": the
+	// https /tturl redirector, because a phone will not open a tt:// address
+	// straight from a notification. Empty means the notification has no tap
+	// target.
+	ClickURL string
 
 	// ntfy push notifications. Empty NtfyURL disables notifications.
 	NtfyURL string
@@ -113,5 +120,50 @@ func Load() Config {
 	if cfg.AdminTTURL == "" && cfg.BotUsername != "" && cfg.BotPassword != "" {
 		cfg.AdminTTURL = ttURL(cfg, cfg.BotUsername, cfg.BotPassword)
 	}
+	cfg.ClickURL = clickURL(cfg)
 	return cfg
+}
+
+// clickURL turns the configured admin address into the URL a notification tap
+// opens. A phone refuses to open a custom scheme straight from a notification
+// (iOS drops such a tap silently), so what travels in the push is the https
+// /tturl redirector, which answers with the tt:// address and lets the client
+// offer the app. An ADMIN_TT_URL that is already http(s) is used verbatim.
+func clickURL(cfg Config) string {
+	raw := cfg.AdminTTURL
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		return raw
+	}
+	user, pass := cfg.BotUsername, cfg.BotPassword
+	if u, p, ok := splitTTUserInfo(raw); ok {
+		user, pass = u, p
+	}
+	if user == "" || pass == "" {
+		return ""
+	}
+	return ttShortURL(cfg, user, pass)
+}
+
+// splitTTUserInfo pulls the credentials out of a tt://user:pass@host:tcp:udp/
+// address. net/url cannot parse that address — "10333:10333" is not a valid
+// URL port — so the userinfo is cut out by hand and percent-decoded.
+func splitTTUserInfo(raw string) (user, pass string, ok bool) {
+	rest, found := strings.CutPrefix(raw, "tt://")
+	if !found {
+		return "", "", false
+	}
+	at := strings.LastIndex(rest, "@")
+	if at < 0 {
+		return "", "", false
+	}
+	userRaw, passRaw, found := strings.Cut(rest[:at], ":")
+	if !found {
+		return "", "", false
+	}
+	user, err1 := url.PathUnescape(userRaw)
+	pass, err2 := url.PathUnescape(passRaw)
+	if err1 != nil || err2 != nil || user == "" || pass == "" {
+		return "", "", false
+	}
+	return user, pass, true
 }

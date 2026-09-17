@@ -2,31 +2,45 @@ package app
 
 import "testing"
 
-// The tap target of a push notification: an explicit ADMIN_TT_URL wins, and
-// without one the address falls back to the bot account the deployment already
-// carries. Percent-encoding matters — a password with @ or a space would
-// otherwise split the URL in the wrong place.
-func TestLoadAdminTTURL(t *testing.T) {
+// The tap target of a push notification. ADMIN_TT_URL names the account (a
+// personal admin one, or the bot when unset), and the click that actually
+// travels is the https /tturl redirector — a phone will not open a tt://
+// address straight from a notification.
+func TestLoadClickURL(t *testing.T) {
 	t.Setenv("TEAMTALK_HOST", "example.org")
 	t.Setenv("TEAMTALK_USERNAME", "bot")
 	t.Setenv("TEAMTALK_PASSWORD", "p@ss word")
 	t.Setenv("ADMIN_TT_URL", "")
 
-	if got, want := Load().AdminTTURL, "tt://bot:p%40ss%20word@example.org:10333:10333/"; got != want {
+	cfg := Load()
+	if got, want := cfg.AdminTTURL, "tt://bot:p%40ss%20word@example.org:10333:10333/"; got != want {
 		t.Errorf("fallback AdminTTURL = %q, want %q", got, want)
 	}
-
-	const explicit = "tt://denizsincar29:secret@example.org:10333:10333/"
-	t.Setenv("ADMIN_TT_URL", explicit)
-	if got := Load().AdminTTURL; got != explicit {
-		t.Errorf("AdminTTURL = %q, want the configured %q", got, explicit)
+	// base64url of "p@ss word", unpadded, is what ttShortURL carries.
+	if got, want := cfg.ClickURL, "https://tt.example.org/tturl?u=bot&p=cEBzcyB3b3Jk"; got != want {
+		t.Errorf("fallback ClickURL = %q, want %q", got, want)
 	}
 
-	// No credentials at all: no invented link, the notification just has no tap
-	// target.
+	// The persona account from .env: the credentials are cut out of the tt://
+	// address and re-encoded into the redirector link.
+	t.Setenv("ADMIN_TT_URL", "tt://denizsincar29:secret@example.org:10333:10333/")
+	cfg = Load()
+	if got, want := cfg.ClickURL, "https://tt.example.org/tturl?u=denizsincar29&p=c2VjcmV0"; got != want {
+		t.Errorf("ClickURL = %q, want %q", got, want)
+	}
+
+	// An https address is already a click target: used verbatim.
+	const explicit = "https://tt.example.org/tturl?u=x&p=y"
+	t.Setenv("ADMIN_TT_URL", explicit)
+	if got := Load().ClickURL; got != explicit {
+		t.Errorf("ClickURL = %q, want the configured %q", got, explicit)
+	}
+
+	// Nothing to log in with: no invented link, the notification simply has no
+	// tap target.
 	t.Setenv("ADMIN_TT_URL", "")
 	t.Setenv("TEAMTALK_PASSWORD", "")
-	if got := Load().AdminTTURL; got != "" {
-		t.Errorf("AdminTTURL = %q, want empty without credentials", got)
+	if got := Load().ClickURL; got != "" {
+		t.Errorf("ClickURL = %q, want empty without credentials", got)
 	}
 }
