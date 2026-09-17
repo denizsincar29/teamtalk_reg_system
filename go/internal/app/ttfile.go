@@ -40,14 +40,20 @@ func ttURL(cfg Config, username, password string) string {
 		pctEncode(username), pctEncode(password), cfg.PublicHost, cfg.TCPPort, cfg.UDPPort)
 }
 
-// ttURLQuery renders the other tt:// shape the TeamTalk 5 clients accept, with
-// the credentials as query parameters instead of userinfo. Which shape a given
-// build opens is not documented anywhere reliable, so the landing page offers
-// both and the owner taps the one that works.
+// ttURLQuery renders the tt:// shape that iOS actually opens, with the
+// credentials as query parameters. The ports must be left out when they are the
+// TeamTalk defaults: "host:10333:10333" makes iOS reject the whole address as
+// invalid ("Safari cannot open the page because the address is invalid"), which
+// is exactly what happened on the owner's phone, while his own redirector page
+// with "tt://host?username=…" opens the client fine. A deployment on
+// non-default ports keeps the explicit three-part host, best effort.
 func ttURLQuery(cfg Config, username, password string) string {
-	return fmt.Sprintf("tt://%s:%d:%d/?username=%s&password=%s",
-		cfg.PublicHost, cfg.TCPPort, cfg.UDPPort,
-		pctEncode(username), pctEncode(password))
+	host := cfg.PublicHost
+	if cfg.TCPPort != 10333 || cfg.UDPPort != 10333 {
+		host = fmt.Sprintf("%s:%d:%d", cfg.PublicHost, cfg.TCPPort, cfg.UDPPort)
+	}
+	return fmt.Sprintf("tt://%s/?username=%s&password=%s",
+		host, pctEncode(username), pctEncode(password))
 }
 
 // ttShortURL renders the messenger-friendly link for one account: an https URL
