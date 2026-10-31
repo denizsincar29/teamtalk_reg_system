@@ -1,14 +1,16 @@
 [Unit]
 Description=TeamTalk Go registration server + ntfy bot
-After=network-online.target tt5@deniz.service
+After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=denizsincar29
-WorkingDirectory=/home/deniz/teamtalk_reg_system
-EnvironmentFile=/home/deniz/teamtalk_reg_system/.env
-ExecStart=/home/deniz/teamtalk_reg_system/ttserver
+# Rendered by deploy.sh: @USER@ is the account running the service, @DIR@ is
+# the checkout directory. Edit deploy.sh variables, not this file.
+User=@USER@
+WorkingDirectory=@DIR@
+EnvironmentFile=@DIR@/.env
+ExecStart=@DIR@/ttserver
 Restart=on-failure
 RestartSec=3
 
