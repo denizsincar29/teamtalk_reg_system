@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -56,6 +57,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /register", s.handleRegister)
 	mux.HandleFunc("GET /download-tt/{username}/{password}", s.handleDownloadTT)
 	mux.HandleFunc("GET /tturl", s.handleTTURL)
+	if s.cfg.PrivacyFile != "" {
+		mux.HandleFunc("GET /privacy", s.pagePrivacy)
+	}
 	mux.HandleFunc("GET /open", s.handleOpen)
 
 	// Admin login/logout and the dashboard shell.
@@ -187,13 +191,33 @@ func (s *Server) adminPage(next http.HandlerFunc) http.HandlerFunc {
 
 // ---- public pages ----
 
+// indexData is what the registration page renders: server address, an optional
+// error, and the policy link (empty = the consent step is not shown).
+func (s *Server) indexData(msg string) viewData {
+	return viewData{
+		"Host":       s.cfg.PublicHost,
+		"TcpPort":    s.cfg.TCPPort,
+		"UdpPort":    s.cfg.UDPPort,
+		"Error":      msg,
+		"PrivacyURL": s.cfg.PolicyLink(),
+	}
+}
+
 func (s *Server) pageIndex(w http.ResponseWriter, r *http.Request) {
-	s.render(w, "index.html", viewData{
-		"Host":    s.cfg.PublicHost,
-		"TcpPort": s.cfg.TCPPort,
-		"UdpPort": s.cfg.UDPPort,
-		"Error":   "",
-	})
+	s.render(w, "index.html", s.indexData(""))
+}
+
+// pagePrivacy serves the local policy text (PRIVACY_FILE). The file is read on
+// every request so the operator can edit it without restarting the service.
+func (s *Server) pagePrivacy(w http.ResponseWriter, r *http.Request) {
+	b, err := os.ReadFile(s.cfg.PrivacyFile)
+	if err != nil {
+		log.Printf("web: privacy file %q: %v", s.cfg.PrivacyFile, err)
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write(b)
 }
 
 func (s *Server) pageLogin(w http.ResponseWriter, r *http.Request) {
@@ -207,16 +231,15 @@ func (s *Server) pageLogin(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	fail := func(msg string) {
-		s.render(w, "index.html", viewData{
-			"Host": s.cfg.PublicHost, "TcpPort": s.cfg.TCPPort, "UdpPort": s.cfg.UDPPort, "Error": msg,
-		})
+		s.render(w, "index.html", s.indexData(msg))
 	}
 	username := strings.TrimSpace(r.FormValue("username"))
 	password := r.FormValue("password")
 
 	// Согласие — правовое основание обработки (152-ФЗ): без галочки аккаунт
-	// не заводим, иначе подтвердить согласие будет нечем.
-	if r.FormValue("consent") == "" {
+	// не заводим, иначе подтвердить согласие будет нечем. Шаг есть только
+	// когда оператор подключил политику (PRIVACY_URL / PRIVACY_FILE).
+	if s.cfg.ConsentRequired() && r.FormValue("consent") == "" {
 		fail("Нужно согласие с политикой обработки персональных данных.")
 		return
 	}

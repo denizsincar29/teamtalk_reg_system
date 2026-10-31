@@ -48,6 +48,33 @@ type Config struct {
 
 	// Scheduler data files live under DataDir (default "./data").
 	DataDir string
+
+	// Personal-data processing policy. PrivacyURL links the operator's own
+	// policy page; PrivacyFile is a local text file served at /privacy for
+	// those who have no page of their own. With neither set the registration
+	// form has no consent step at all — not every server needs one.
+	PrivacyURL  string
+	PrivacyFile string
+	// ConsentNote overrides what is written into the TeamTalk account note as
+	// proof of consent. Empty derives a short note from the policy link.
+	ConsentNote string
+}
+
+// ConsentRequired reports whether the registration form asks the user to
+// accept a personal-data processing policy. No policy configured — no consent
+// step: there is nothing to link and nothing to record.
+func (c Config) ConsentRequired() bool { return c.PolicyLink() != "" }
+
+// PolicyLink is the href for the policy link: the operator's external page,
+// or the local /privacy page when PRIVACY_FILE is set. Empty = no policy.
+func (c Config) PolicyLink() string {
+	if c.PrivacyURL != "" {
+		return c.PrivacyURL
+	}
+	if c.PrivacyFile != "" {
+		return "/privacy"
+	}
+	return ""
 }
 
 func envStr(key, def string) string {
@@ -114,6 +141,9 @@ func Load() Config {
 		NtfyURL:          ntfyURL,
 		AdminTTURL:       envStr("ADMIN_TT_URL", ""),
 		DataDir:          envStr("DATA_DIR", "data"),
+		PrivacyURL:       envStr("PRIVACY_URL", ""),
+		PrivacyFile:      envStr("PRIVACY_FILE", ""),
+		ConsentNote:      envStr("CONSENT_NOTE", ""),
 	}
 	// Without an explicit address the tap target is the bot account, whose
 	// credentials the deployment already carries.

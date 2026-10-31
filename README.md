@@ -155,11 +155,21 @@ the Python app loads it itself.
 | `NTFY_TOPIC` | (empty) | ntfy topic |
 | `NTFY_URL` | (empty) | Full ntfy URL; wins over server + topic |
 | `NTFY_USERNAME` / `NTFY_PASSWORD` | (empty) | Basic auth for a protected ntfy server |
+| `PRIVACY_URL` | (empty) | Link to your personal-data policy on the registration page |
+| `PRIVACY_FILE` | (empty) | Plain-text policy file served at `/privacy` instead of `PRIVACY_URL` |
+| `CONSENT_NOTE` | (empty) | Note stored in the TeamTalk account as proof of consent |
 | `FORWARDED_ALLOW_IPS` | `*` | Python only — trusted proxy IPs |
 | `ROOT_PATH` | (empty) | Python only — subpath prefix for reverse proxying |
 
 Leaving all three ntfy keys empty disables push notifications; the bot then
 works as a plain registration + admin service.
+
+The personal-data consent step is optional and pluggable: point `PRIVACY_URL`
+at your own policy page, or put a plain-text policy in a file and set
+`PRIVACY_FILE` to serve it at `/privacy`. With neither set the registration
+form simply has no consent checkbox and no policy link. `CONSENT_NOTE` sets
+the wording written into each new TeamTalk account as proof of consent; when
+it is empty the note is built from the policy link.
 
 ## Endpoints
 
@@ -168,6 +178,7 @@ works as a plain registration + admin service.
 | `/` | GET | Registration form |
 | `/register` | POST | Handle registration |
 | `/download-tt/{username}/{password}` | GET | Download the `.tt` file |
+| `/privacy` | GET | Local personal-data policy (only with `PRIVACY_FILE`) |
 | `/tturl` | GET | https → `tt://` redirector for messengers |
 | `/open` | GET | “Open in TeamTalk” helper page |
 | `/admin` | GET | Admin panel (TeamTalk admin credentials) |
